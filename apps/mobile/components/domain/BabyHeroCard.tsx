@@ -1,13 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image, Text, View } from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { colors, space, type } from '@/lib/design-system/tokens';
 export function BabyHeroCard({
-  name = 'Aisyah',
+  name = 'Your baby',
   imageUrl,
+  bornSummary,
+  actualAge,
+  correctedAge,
+  onPressPhoto,
 }: {
   name?: string;
   imageUrl?: string;
+  bornSummary?: string;
+  actualAge?: { label: string; sub: string };
+  correctedAge?: { label: string; sub: string };
+  onPressPhoto?: () => void;
 }) {
   return (
     <Card
@@ -19,7 +27,13 @@ export function BabyHeroCard({
       }}
     >
       <View style={{ flexDirection: 'row', gap: space.md }}>
-        <View
+        <TouchableOpacity
+          onPress={onPressPhoto}
+          disabled={!onPressPhoto}
+          accessibilityRole={onPressPhoto ? 'button' : undefined}
+          accessibilityLabel={
+            imageUrl ? `Change ${name}'s photo` : `Add a photo of ${name}`
+          }
           style={{
             width: 112,
             height: 205,
@@ -36,22 +50,42 @@ export function BabyHeroCard({
               style={{ width: '100%', height: '100%' }}
             />
           ) : (
-            <Ionicons name="heart" size={38} color={colors.pink} />
+            <>
+              <Ionicons name="heart" size={38} color={colors.pink} />
+              {onPressPhoto && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <Ionicons name="camera" size={14} color={colors.pink} />
+                  <Text style={{ fontSize: 10, color: colors.pink, fontWeight: '700' }}>
+                    Add photo
+                  </Text>
+                </View>
+              )}
+            </>
           )}
-        </View>
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>
             {name} <Text style={{ color: colors.pink }}>♥</Text>
           </Text>
-          <Text
-            style={{
-              color: colors.muted,
-              fontSize: type.caption,
-              marginTop: 5,
-            }}
-          >
-            Born 32w 3d · 1.58 kg
-          </Text>
+          {bornSummary && (
+            <Text
+              style={{
+                color: colors.muted,
+                fontSize: type.caption,
+                marginTop: 5,
+              }}
+            >
+              {bornSummary}
+            </Text>
+          )}
           <View
             style={{
               borderTopWidth: 1,
@@ -66,10 +100,10 @@ export function BabyHeroCard({
             <Text
               style={{ fontSize: 25, fontWeight: '800', color: colors.text }}
             >
-              20 days
+              {actualAge?.label ?? '—'}
             </Text>
             <Text style={{ fontSize: type.caption, color: colors.muted }}>
-              (34w 2d)
+              {actualAge?.sub ?? ''}
             </Text>
             <Text style={{ color: colors.muted, fontSize: 11, marginTop: 13 }}>
               Corrected age
@@ -77,10 +111,10 @@ export function BabyHeroCard({
             <Text
               style={{ fontSize: 25, fontWeight: '800', color: colors.text }}
             >
-              6 days
+              {correctedAge?.label ?? '—'}
             </Text>
             <Text style={{ fontSize: type.caption, color: colors.muted }}>
-              (33w 2d)
+              {correctedAge?.sub ?? ''}
             </Text>
           </View>
         </View>

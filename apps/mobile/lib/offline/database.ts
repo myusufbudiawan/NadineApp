@@ -22,6 +22,15 @@ export async function saveProfile(id: string, payload: string) {
     new Date().toISOString(),
   );
 }
+
+export async function getProfile(id: string): Promise<string | undefined> {
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<{ payload: string }>(
+    'SELECT payload FROM baby_profiles WHERE id = ?',
+    id,
+  );
+  return rows[0]?.payload;
+}
 export async function queueMutation(
   id: string,
   entityType: string,
@@ -118,6 +127,15 @@ export async function listCareEvents(babyId: string, type?: string) {
   return database.getAllAsync<CareEventRow>(
     'SELECT * FROM care_events WHERE baby_id = ? AND deleted_at IS NULL ORDER BY occurred_at DESC',
     babyId,
+  );
+}
+
+export async function listCareEventsSince(babyId: string, sinceIso: string) {
+  const database = await getDatabase();
+  return database.getAllAsync<CareEventRow>(
+    'SELECT * FROM care_events WHERE baby_id = ? AND occurred_at >= ? AND deleted_at IS NULL ORDER BY occurred_at DESC',
+    babyId,
+    sinceIso,
   );
 }
 

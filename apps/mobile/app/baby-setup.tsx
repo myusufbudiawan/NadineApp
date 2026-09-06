@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Platform, ScrollView, Text, TextInput, View, TouchableOpacity } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Crypto from 'expo-crypto';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { colors, radius, space, type } from '@/lib/design-system/tokens';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
@@ -34,6 +35,7 @@ const fields: { key: keyof BabyProfile; label: string; numeric?: boolean }[] = [
   },
 ];
 export default function BabySetup() {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -48,16 +50,22 @@ export default function BabySetup() {
     router.replace('/(tabs)/home');
   };
   const handleDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setProfile((p) => ({
         ...p,
         dateOfBirth: selectedDate.toISOString(),
       }));
     }
+    setShowDatePicker(Platform.OS === 'ios');
   };
   return (
-    <ScrollView contentContainerStyle={{ padding: space.xl, gap: space.md }}>
+    <ScrollView
+      contentContainerStyle={{
+        padding: space.xl,
+        paddingTop: insets.top + space.xl,
+        gap: space.md,
+      }}
+    >
       <Text
         style={{ fontSize: type.title, fontWeight: '800', color: colors.text }}
       >

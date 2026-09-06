@@ -49,6 +49,7 @@ These rules override convenience or shortcuts anywhere else in this plan. If a t
 3. If a requirement is ambiguous or an Open Product Decision (Section 9) blocks a task, stop and flag it rather than guessing a clinical or compliance-sensitive default.
 4. Keep this file updated as the plan evolves — it is meant to be a living tracker, not a static spec dump. Add new tasks under the correct phase rather than creating parallel task lists elsewhere.
 5. Anything touching clinical content, growth-standard datasets, medication data, or alert thresholds must be tagged `NEEDS-CLINICAL-REVIEW` in code comments and PR descriptions, and must not be enabled by default in production until reviewed.
+6. **Every change that touches this repo updates [README.md](README.md)'s Changelog.** Before ending a work session (or a PR, if working in that unit), add one entry — newest at the top — under README's `## Changelog` section: date, the phase/task ID(s) touched, a one-or-two-line summary of what changed, and any gaps deliberately left open (mirroring how gaps are flagged in Section 11). This applies to every change, not only completed phases — a partial task or a fix gets an entry too. Do not batch multiple sessions' changes into one entry, and do not rewrite prior entries except to fix a factual error.
 
 ---
 
@@ -532,12 +533,12 @@ Each `domains/<name>/` folder contains its own `routes.ts`, `service.ts` (busine
 
 **2.1 Home dashboard (FR-004, SCR-03)**
 
-- [ ] Header: greeting, caregiver name, notification icon.
-- [ ] Baby card: photo/avatar, name, birth info, latest weight, actual age, corrected age.
-- [ ] "Today at a glance": weight, feeding, sleep, diaper compact cards, aggregated from today's CareEvents + latest measurements.
-- [ ] Daily goal/encouragement card — copy reviewed for non-judgmental tone.
-- [ ] Proper empty states everywhere data is missing (never a misleading zero).
-- _Acceptance:_ Dashboard accurately reflects latest state after any log action from Phase 1, updates in near-real-time on save, and shows correct empty states for a brand-new baby profile.
+- [~] Header: greeting, caregiver name, notification icon. — Greeting/icon in place; caregiver name still hardcoded "Mama" pending auth/caregiver profile (Phase 0.3).
+- [x] Baby card: photo/avatar, name, birth info, latest weight, actual age, corrected age. — `BabyHeroCard` now reads the real `BabyProfile` and computes actual/corrected age via `lib/age.ts`; photo is tappable to pick from the device library (`expo-image-picker`) and persists to the profile.
+- [x] "Today at a glance": weight, feeding, sleep, diaper compact cards, aggregated from today's CareEvents + latest measurements. — `features/care-events/todaySummary.ts` aggregates today's feeding/sleep/diaper counts and latest weight (with delta vs. previous reading) from local SQLite, loaded on every screen focus.
+- [x] Daily goal/encouragement card — copy reviewed for non-judgmental tone. — Unchanged static copy, still non-judgmental.
+- [x] Proper empty states everywhere data is missing (never a misleading zero). — No-profile state shows a setup prompt instead of fabricated data; each metric card shows "No X logged yet" until at least one event of that type has ever been logged.
+- _Acceptance:_ Dashboard accurately reflects latest state after any log action from Phase 1, updates in near-real-time on save, and shows correct empty states for a brand-new baby profile. — Logic verified by code review + `tsc`; **not yet click-verified end-to-end on-device** because `expo-sqlite` doesn't run in the web preview without extra WASM config (pre-existing, documented limitation) — needs an iOS/Android run to confirm.
 
 **2.2 Growth measurement pipeline (FR-012)**
 

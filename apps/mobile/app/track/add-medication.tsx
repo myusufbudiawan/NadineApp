@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { EntryForm } from '@/components/forms/EntryForm';
 import { Button } from '@/components/ui/Button';
+import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import {
@@ -12,7 +13,7 @@ import {
 import { MedicationData } from '@/features/care-events/types';
 import { useEditableEntry } from '@/features/care-events/useEditableEntry';
 import { confirmDestructive } from '@/lib/confirm';
-import { colors, space } from '@/lib/design-system/tokens';
+import { colors } from '@/lib/design-system/tokens';
 
 // Pure record-keeping — this screen never computes, suggests, or validates a
 // dose against a reference range. No dosing-guidance logic belongs here.
@@ -22,21 +23,14 @@ export default function AddMedication() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: space.xl, backgroundColor: colors.canvas }}>
+      <FormScreen>
         <Text style={{ color: colors.muted }}>Loading…</Text>
-      </View>
+      </FormScreen>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding: space.xl,
-        gap: space.lg,
-        backgroundColor: colors.canvas,
-      }}
-    >
+    <FormScreen>
       <ScreenHeader title={id ? 'Edit Medication' : 'Add Medication'} back />
       <EntryForm
         fields={[
@@ -115,6 +109,6 @@ export default function AddMedication() {
           Delete entry
         </Button>
       )}
-    </View>
+    </FormScreen>
   );
 }

@@ -23,6 +23,48 @@ export function formatDuration(startAt: string, endAt: string) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatDayLabel(date: Date) {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (isSameDay(date, today)) return 'Today';
+  if (isSameDay(date, yesterday)) return 'Yesterday';
+  return date.toLocaleDateString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+export type CareEventDayGroup = { label: string; events: CareEvent[] };
+
+// History screens read chronologically-descending event lists (Section 1.10)
+// and group them by calendar day so a long history stays scannable.
+export function groupEventsByDay(events: CareEvent[]): CareEventDayGroup[] {
+  const groups: CareEventDayGroup[] = [];
+  const indexByKey = new Map<string, number>();
+  for (const event of events) {
+    const date = new Date(event.occurredAt);
+    const key = date.toDateString();
+    let index = indexByKey.get(key);
+    if (index === undefined) {
+      index = groups.length;
+      indexByKey.set(key, index);
+      groups.push({ label: formatDayLabel(date), events: [] });
+    }
+    groups[index].events.push(event);
+  }
+  return groups;
+}
+
 export type CareEventRowConfig = {
   type: CareEventType;
   icon: keyof typeof Ionicons.glyphMap;

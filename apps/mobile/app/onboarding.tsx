@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors, space, type } from '@/lib/design-system/tokens';
@@ -22,11 +23,13 @@ const points = [
   },
 ];
 export default function Onboarding() {
+  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       contentContainerStyle={{
         flexGrow: 1,
         padding: space.xl,
+        paddingTop: insets.top + space.xl,
         justifyContent: 'center',
         gap: space.xl,
       }}

@@ -8,4 +8,5 @@ export type BabyProfile = {
   birthLengthCm?: number;
   birthHeadCircumferenceCm?: number;
   fullTermReferenceWeeks: number;
+  photoUri?: string;
 };

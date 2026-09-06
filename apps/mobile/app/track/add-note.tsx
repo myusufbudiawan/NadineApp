@@ -4,6 +4,7 @@ import { Alert, Text, View } from 'react-native';
 import { NotesInput } from '@/components/forms/NotesInput';
 import { TimePicker } from '@/components/forms/TimePicker';
 import { Button } from '@/components/ui/Button';
+import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import {
@@ -30,9 +31,9 @@ export default function AddNote() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: space.xl, backgroundColor: colors.canvas }}>
+      <FormScreen>
         <Text style={{ color: colors.muted }}>Loading…</Text>
-      </View>
+      </FormScreen>
     );
   }
 
@@ -63,14 +64,7 @@ export default function AddNote() {
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding: space.xl,
-        gap: space.lg,
-        backgroundColor: colors.canvas,
-      }}
-    >
+    <FormScreen>
       <ScreenHeader title={id ? 'Edit Note' : 'Add Note'} back />
       <TimePicker label="Time" value={time} onChange={setTime} />
       <NotesInput label="Note" placeholder="What's on your mind?" value={note} onChange={setNote} minHeight={140} />
@@ -92,6 +86,6 @@ export default function AddNote() {
           </Button>
         )}
       </View>
-    </View>
+    </FormScreen>
   );
 }

@@ -1,12 +1,142 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
-import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { TabScreen } from '@/components/ui/Screen';
+import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
+import { loadBabyProfile } from '@/features/baby-profile/storage';
+import { BabyProfile } from '@/features/baby-profile/types';
+import { computeTodaySummary, TodaySummary } from '@/features/care-events/todaySummary';
+import { actualAge, correctedAge, toAge } from '@/lib/age';
+import { saveProfile } from '@/lib/offline/database';
 import { colors, type } from '@/lib/design-system/tokens';
+
+function formatDuration(totalMinutes: number) {
+  const h = Math.floor(totalMinutes / 60);
+  const m = Math.round(totalMinutes % 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
 export default function Home() {
+  const [profile, setProfile] = useState<BabyProfile | undefined>(undefined);
+  const [summary, setSummary] = useState<TodaySummary | undefined>(undefined);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const [nextProfile, nextSummary] = await Promise.all([
+      loadBabyProfile(LOCAL_BABY_ID),
+      computeTodaySummary(LOCAL_BABY_ID),
+    ]);
+    setProfile(nextProfile);
+    setSummary(nextSummary);
+    setLoaded(true);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refresh().catch((err) => {
+        console.error('home refresh failed', err);
+      });
+    }, [refresh]),
+  );
+
+  const pickPhoto = async () => {
+    if (!profile) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const next: BabyProfile = { ...profile, photoUri: result.assets[0].uri };
+    await saveProfile(next.id, JSON.stringify(next));
+    setProfile(next);
+  };
+
+  if (loaded && !profile) {
+    return (
+      <TabScreen>
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <View>
+            <Text style={{ color: colors.muted, fontSize: type.label }}>
+              Good morning,
+            </Text>
+            <Text
+              style={{ color: colors.text, fontSize: type.title, fontWeight: '800' }}
+            >
+              Mama <Text style={{ color: colors.pink }}>♥</Text>
+            </Text>
+          </View>
+          <Ionicons
+            accessibilityLabel="Notifications"
+            name="notifications-outline"
+            size={22}
+            color={colors.text}
+          />
+        </View>
+        <Card style={{ alignItems: 'center', gap: 8, padding: 24 }}>
+          <Ionicons name="heart-outline" size={32} color={colors.pink} />
+          <Text
+            style={{
+              fontSize: type.label,
+              fontWeight: '800',
+              color: colors.text,
+              textAlign: 'center',
+            }}
+          >
+            Set up your baby's profile
+          </Text>
+          <Text style={{ color: colors.muted, textAlign: 'center' }}>
+            Add your baby's details to see their age and daily summary here.
+          </Text>
+          <Button onPress={() => router.push('/baby-setup')} style={{ marginTop: 8 }}>
+            Set up profile
+          </Button>
+        </Card>
+      </TabScreen>
+    );
+  }
+
+  let heroActualAge: { label: string; sub: string } | undefined;
+  let heroCorrectedAge: { label: string; sub: string } | undefined;
+  let bornSummary: string | undefined;
+
+  if (profile) {
+    const dob = new Date(profile.dateOfBirth);
+    const actual = actualAge(dob);
+    const corrected = correctedAge(
+      dob,
+      profile.gestationalWeeks,
+      profile.gestationalDays,
+      profile.fullTermReferenceWeeks,
+    );
+    const postmenstrualDays =
+      profile.gestationalWeeks * 7 + profile.gestationalDays + actual.totalDays;
+    const postmenstrual = toAge(postmenstrualDays);
+    const postmenstrualLabel = `(${postmenstrual.weeks}w ${postmenstrual.days}d)`;
+
+    heroActualAge = { label: `${actual.totalDays} days`, sub: postmenstrualLabel };
+    heroCorrectedAge = { label: `${corrected.totalDays} days`, sub: postmenstrualLabel };
+    bornSummary = `Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
+      profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
+    }`;
+  }
+
   return (
     <TabScreen>
       <View
@@ -37,7 +167,14 @@ export default function Home() {
           color={colors.text}
         />
       </View>
-      <BabyHeroCard />
+      <BabyHeroCard
+        name={profile?.name || 'Your baby'}
+        imageUrl={profile?.photoUri}
+        bornSummary={bornSummary}
+        actualAge={heroActualAge}
+        correctedAge={heroCorrectedAge}
+        onPressPhoto={pickPhoto}
+      />
       <Text
         style={{ fontSize: type.label, fontWeight: '800', color: colors.text }}
       >
@@ -47,35 +184,43 @@ export default function Home() {
         <MetricCard
           icon="scale-outline"
           tone="pink"
-          value="1.68"
-          unit="kg"
-          caption="+0.05 kg vs yesterday"
+          value={summary?.weight.hasAny ? String(summary.weight.value) : '—'}
+          unit={summary?.weight.hasAny ? summary?.weight.unit : undefined}
+          caption={summary?.weight.hasAny ? summary!.weight.deltaCaption! : 'No weight logged yet'}
         />
         <MetricCard
           icon="water-outline"
           tone="violet"
-          value="36"
-          unit="ml"
-          caption="Every 3 hrs · Last feed"
+          value={summary?.feeding.hasAny ? String(summary.feeding.lastAmount ?? '—') : '—'}
+          unit={summary?.feeding.hasAny ? summary?.feeding.lastUnit : undefined}
+          caption={
+            summary?.feeding.hasAny
+              ? `${summary.feeding.todayCount} feeds today`
+              : 'No feeding logged yet'
+          }
         />
       </View>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <MetricCard
           icon="moon-outline"
           tone="blue"
-          value="7h 20m"
-          caption="Total sleep"
+          value={summary?.sleep.hasAny ? formatDuration(summary.sleep.todayTotalMinutes) : '—'}
+          caption={summary?.sleep.hasAny ? 'Total sleep today' : 'No sleep logged yet'}
         />
         <MetricCard
           icon="happy-outline"
           tone="yellow"
-          value="6"
-          caption="Diapers (Wet 5 / Dirty 1)"
+          value={summary?.diaper.hasAny ? String(summary.diaper.todayCount) : '—'}
+          caption={
+            summary?.diaper.hasAny
+              ? `Wet ${summary.diaper.wet} / Dirty ${summary.diaper.dirty}`
+              : 'No diaper logged yet'
+          }
         />
       </View>
       <EncouragementCard
-        title="Today’s goal"
-        message="Keep going Mama! You’re doing an amazing job."
+        title="Today's goal"
+        message="Keep going Mama! You're doing an amazing job."
       />
     </TabScreen>
   );

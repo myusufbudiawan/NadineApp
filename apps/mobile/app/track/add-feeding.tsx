@@ -1,7 +1,8 @@
 import { router } from 'expo-router';
-import { Alert, Text, View } from 'react-native';
+import { Alert, Text } from 'react-native';
 import { EntryForm } from '@/components/forms/EntryForm';
 import { Button } from '@/components/ui/Button';
+import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import {
@@ -12,7 +13,7 @@ import {
 import { FeedingData } from '@/features/care-events/types';
 import { useEditableEntry } from '@/features/care-events/useEditableEntry';
 import { confirmDestructive } from '@/lib/confirm';
-import { colors, space, type } from '@/lib/design-system/tokens';
+import { colors } from '@/lib/design-system/tokens';
 
 export default function AddFeeding() {
   const { id, existing, loading } = useEditableEntry('feeding');
@@ -20,21 +21,14 @@ export default function AddFeeding() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, padding: space.xl, backgroundColor: colors.canvas }}>
+      <FormScreen>
         <Text style={{ color: colors.muted }}>Loading…</Text>
-      </View>
+      </FormScreen>
     );
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        padding: space.xl,
-        gap: space.lg,
-        backgroundColor: colors.canvas,
-      }}
-    >
+    <FormScreen>
       <ScreenHeader title={id ? 'Edit Feeding' : 'Add Feeding'} back />
       <EntryForm
         fields={[
@@ -103,6 +97,6 @@ export default function AddFeeding() {
           Delete entry
         </Button>
       )}
-    </View>
+    </FormScreen>
   );
 }
