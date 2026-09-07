@@ -4,8 +4,15 @@ import { CareEventType, InMemoryCareEventRepository } from './repository.js';
 import { careEventPatchSchema, careEventSchema } from './schema.js';
 import { CareEventsService } from './service.js';
 
-export async function careEventsRoutes(app: FastifyInstance) {
-  const service = new CareEventsService(new InMemoryCareEventRepository(), auditService);
+// deps.service lets one buildServer() call thread a single instance to
+// domains that need cross-domain reads (Reports) without reaching into this
+// domain's repository directly (Constitution 0.A #3).
+export async function careEventsRoutes(
+  app: FastifyInstance,
+  deps: { service?: CareEventsService } = {},
+) {
+  const service =
+    deps.service ?? new CareEventsService(new InMemoryCareEventRepository(), auditService);
 
   app.get('/v1/babies/:babyId/events', async (request) => {
     const { babyId } = request.params as { babyId: string };

@@ -90,7 +90,7 @@ export default function Home() {
           />
         </View>
         <Card style={{ alignItems: 'center', gap: 8, padding: 24 }}>
-          <Ionicons name="heart-outline" size={32} color={colors.pink} />
+          <Ionicons name="person-add-outline" size={32} color={colors.pink} />
           <Text
             style={{
               fontSize: type.label,
@@ -131,8 +131,18 @@ export default function Home() {
     const postmenstrualLabel = `(${postmenstrual.weeks}w ${postmenstrual.days}d)`;
 
     heroActualAge = { label: `${actual.totalDays} days`, sub: postmenstrualLabel };
-    heroCorrectedAge = { label: `${corrected.totalDays} days`, sub: postmenstrualLabel };
-    bornSummary = `Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
+    // Corrected age is negative until a preterm baby reaches its full-term
+    // due date (Section 8.2) — expected, not an error, so it's labeled
+    // rather than shown as a bare negative number.
+    heroCorrectedAge = {
+      label:
+        corrected.totalDays < 0
+          ? `${Math.abs(corrected.totalDays)} days pre-term`
+          : `${corrected.totalDays} days`,
+      sub: postmenstrualLabel,
+    };
+    const sexLabel = profile.sex === 'girl' ? 'Girl' : 'Boy';
+    bornSummary = `${sexLabel} · Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
       profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
     }`;
   }
@@ -157,7 +167,7 @@ export default function Home() {
               fontWeight: '800',
             }}
           >
-            Mama <Text style={{ color: colors.pink }}>♥</Text>
+            Mama
           </Text>
         </View>
         <Ionicons

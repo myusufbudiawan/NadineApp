@@ -2,6 +2,7 @@ export type StoredBaby = {
   id: string;
   userId: string;
   name: string;
+  sex: 'girl' | 'boy';
   dateOfBirth: Date;
   gestationalWeeks: number;
   gestationalDays: number;

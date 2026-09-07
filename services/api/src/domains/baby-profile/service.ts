@@ -17,4 +17,7 @@ export class BabyProfileService {
     this.babies.set(id, baby);
     return baby;
   }
+  async get(id: string) {
+    return this.babies.get(id);
+  }
 }

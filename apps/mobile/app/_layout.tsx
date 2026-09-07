@@ -38,9 +38,15 @@ export default function RootLayout() {
           options={{ presentation: 'card' }}
         />
         <Stack.Screen
+          name="track/add-growth"
+          options={{ presentation: 'card' }}
+        />
+        <Stack.Screen
           name="track/history/[type]"
           options={{ presentation: 'card' }}
         />
+        <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
+        <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
       </Stack>
     </SafeAreaProvider>
   );

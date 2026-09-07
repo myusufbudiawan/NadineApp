@@ -1,6 +1,7 @@
 import { z } from 'zod';
 export const babySchema = z.object({
   name: z.string().trim().min(1),
+  sex: z.enum(['girl', 'boy']),
   dateOfBirth: z.coerce.date().max(new Date()),
   gestationalWeeks: z.number().int().min(20).max(45),
   gestationalDays: z.number().int().min(0).max(6),

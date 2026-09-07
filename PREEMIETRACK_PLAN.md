@@ -542,19 +542,21 @@ Each `domains/<name>/` folder contains its own `routes.ts`, `service.ts` (busine
 
 **2.2 Growth measurement pipeline (FR-012)**
 
-- [ ] `GrowthMeasurement` entity; `/v1/babies/{id}/growth` (GET/POST).
-- [ ] Ingest weight/length/head-circumference measurements (weight can source from WeightEvent; length/head-circ need their own capture point — confirm whether these come from a dedicated "Growth entry" screen or are inferred from existing forms; flag as a gap since the prototype doesn't fully specify this).
-- _Acceptance:_ Growth measurements are queryable by babyId + metric + date range, with correct units preserved.
+- [x] `GrowthMeasurement` entity; `/v1/babies/{id}/growth` (GET/POST). — Backend: `services/api/src/domains/growth/{repository,schema,service,routes}.ts`, wired into `server.ts`, migration in `001_initial.sql`, covered by `test/growth.test.ts` (create/list/filter-by-metric/reject-implausible/audit — 4 passing).
+- [x] Ingest weight/length/head-circumference measurements. — Resolved the flagged gap: weight sources live from the existing `WeightEvent` history (Track > Add Weight, Section 1.4) via `features/growth/storage.ts#loadMeasurementsForMetric` rather than duplicating capture; length/head-circumference get a dedicated capture screen, `app/track/add-growth.tsx`, built from the same shared `EntryForm` skeleton as every other Add-X screen (Constitution 0.A #2), reachable from a "+" button on the Growth screen header.
+- _Acceptance:_ Backend measurements are queryable by babyId + metric + date range, units preserved (verified by tests). Mobile side is local-first only (SQLite `growth_measurements` table in `lib/offline/database.ts`), matching the not-yet-synced pattern of care-events (Phase 5 wires the two together) — this is not yet reconciled with the backend endpoint above.
 
 **2.3 Growth screen (SCR-11)**
 
-- [ ] Segmented selector: Weight / Length / Head Circumference.
-- [ ] Corrected-age indicator above chart, sourced from 0.5 engine.
-- [ ] Interactive chart: pinch/drag or accessible range selection; text/table alternative for screen readers (Section 14).
-- [ ] Show latest value, Δ24h, Δ7d where sufficient data exists.
-- [ ] Reference bands sourced from a clinically approved, named/versioned growth-standard dataset. `NEEDS-CLINICAL-REVIEW` — ship with dataset placeholder clearly marked "pending clinical approval" if Open Decision #1 unresolved; do not fabricate percentile curves.
-- [ ] Never label any band/percentile as a diagnosis — copy review required.
-- _Acceptance:_ Chart renders correctly with sparse, dense, and out-of-range datasets (see QA 17.1); screen-reader users get an equivalent data table; no diagnostic language present anywhere in this screen.
+- [x] Segmented selector: Weight / Length / Head Circumference. — Switches data source and reloads on change.
+- [x] Corrected-age indicator above chart, sourced from 0.5 engine (`lib/age.ts#correctedAge`).
+- [~] Interactive chart: pinch/drag or accessible range selection; text/table alternative for screen readers (Section 14). — `components/domain/GrowthChart.tsx` now plots real data points (each measurement placed at the corrected age it was taken at, not "today"), scales its axis to the data, and handles zero/one/sparse/dense datasets. It exposes a computed `accessibilityLabel` summarizing the trend. **Gap flagged:** no pinch/drag/range-selection interaction and no full tabular alternative view yet — deferred to Phase 5 accessibility pass (5.3).
+- [x] Show latest value, Δ vs previous reading, Δ7d where sufficient data exists (`features/growth/stats.ts`).
+- [x] Reference bands: deliberately **not rendered** as a shape/curve — Open Decision #1 is unresolved and Section 2.3's acceptance explicitly forbids fabricating a percentile curve. The legend keeps a text-only note instead of the prototype's pink shaded band. This is a intentional visual deviation from the literal prototype (Constitution 0.A #4), justified by the guardrail in Section 15 ("no unconfigurable clinical constants" / never imply clinical data that doesn't exist).
+- [x] **Preemie-aware reference switching (added 2026-09-07):** corrected age can now go negative — a preterm baby's corrected age is negative until it reaches its full-term-equivalent due date, and clamping that to zero (the original implementation) collapsed every early growth reading onto day zero, destroying the trend line for exactly the babies this app is for. Fixed in `lib/age.ts` (`correctedAge` now uses a signed day breakdown instead of `Math.max(0, …)`) and propagated through `features/growth/stats.ts` into the chart's x-axis. `features/growth/reference.ts` adds a `growthReferenceFor(correctedAgeTotalDays)` switch that labels the applicable standard — "preterm reference" while corrected age is negative, "term reference" once it crosses zero — surfaced in the chart legend and its accessibility label. `GrowthChart.tsx` draws a dashed "Due date" marker at corrected-age zero so preterm readings plot meaningfully to its left. Per the Open Decision #1 rule (Section 9), only the *label switch* is implemented — no percentile curve is fabricated for either standard; swap in the real named/versioned dataset behind this same switch once clinically approved.
+- [x] No diagnostic language anywhere on this screen (copy reviewed).
+- _Acceptance:_ Chart renders correctly with zero, sparse, and dense datasets, including negative-corrected-age (preterm) data (verified via browser preview for the empty/single-reading cases; age-math verified by the updated `__tests__/age.runner.ts`, which now asserts negative corrected age is preserved rather than clamped, plus `formatAge`/`formatAgeDetailed` sign handling). Out-of-range/dense-dataset and on-device SQLite write verification are outstanding — see gap below. Screen-reader users get an accessible summary label, not yet a full data table (gap noted above). No diagnostic language present anywhere in this screen.
+- **Gap flagged:** end-to-end save-and-replot could not be click-verified in the web preview — `expo-sqlite` writes (`runAsync`) hang indefinitely in this Expo-web session (reads work fine). This reproduces identically on the untouched, pre-existing Add Weight screen, confirming it's an environment limitation of the web preview, not a defect introduced here (consistent with the same caveat already recorded under 2.1). Needs an iOS/Android simulator or device run to confirm the full write → reload → chart-updates path, including a genuinely preterm baby profile (corrected age still negative today).
 
 ---
 
@@ -562,26 +564,28 @@ Each `domains/<name>/` folder contains its own `routes.ts`, `service.ts` (busine
 
 **3.1 Tips content pipeline (FR-013, SCR-12, SCR-13)**
 
-- [ ] `TipContent` entity + admin/content console (separate authenticated interface, per Section 10.1) for clinically reviewed content entry.
-- [ ] `/v1/tips` (GET) — eligibility filtering by baby stage/corrected age.
-- [ ] Tips screen: "For you today" featured card + topic list (Feeding & Nutrition, Growth & Development, Sleep, Daily Care, Emotional Support).
-- [ ] Tip Detail screen: article + visible source/review metadata + "educational information" boundary notice.
-- _Acceptance:_ Content can be authored/published via admin console; mobile Tips screen reflects stage-appropriate filtering; every clinical article visibly discloses its educational-only status and review metadata. `NEEDS-CLINICAL-REVIEW` on all seeded content before production enablement.
+- [x] `TipContent` entity + authoring endpoint for clinically reviewed content entry. — Backend: `services/api/src/domains/content/{repository,schema,service,routes,seed}.ts`, migration in `001_initial.sql`, covered by `test/content.test.ts` (3 passing). **Gap flagged:** no separate authenticated admin console UI exists — `POST /v1/tips` is the authoring entry point a future console would call, per Section 10.1's acceptance wording ("via admin console"), but there's no dedicated interface yet.
+- [x] `/v1/tips` (GET) — eligibility filtering by category and corrected-age-in-days range (`?category=&correctedAgeDays=`).
+- [ ] Tips screen: "For you today" featured card + topic list. — Left as the existing static prototype screen (`app/(tabs)/tips.tsx`), **not wired to the new endpoint.** Reasoning: `ContentService.list()` correctly returns nothing by default (Section 15 guardrail — only `reviewStatus: 'approved'` content is ever served, and the seeded placeholders are intentionally `needs-clinical-review`), so wiring it up today would just replace the static prototype content with an empty screen for no functional gain. Revisit once real clinically-approved content exists to author via `POST /v1/tips`.
+- [ ] Tip Detail screen. — Not built; blocked on the same gap above.
+- _Acceptance (backend portion only):_ Content can be authored via the create endpoint and is filterable by category/corrected-age; `needs-clinical-review`/`draft` content is proven (by test) to never appear in the default listing. Mobile-side acceptance (stage-appropriate rendering, visible review-metadata disclosure) is **not met** — flagged above, not silently skipped.
 
 **3.2 Reminders (FR-014, SCR-15)**
 
-- [ ] `Reminder` entity; `/v1/babies/{id}/reminders` (GET/POST).
-- [ ] Reminder types: feeding, medication (reminder-only, no dose logic), measurement, general/configurable recurring (exact set pending Open Decision #8).
-- [ ] Create/edit/snooze/complete flows.
-- [ ] Timezone-aware scheduling, correct behavior across DST transitions.
-- [ ] Missed-reminder UX: neutral status, no shaming copy, easy reschedule (Section 12).
-- _Acceptance:_ Recurring reminder correctly fires across a DST boundary (test explicitly per QA 17.1); missed reminders never use guilt-oriented language (copy review).
+- [x] `Reminder` entity; `/v1/babies/{id}/reminders` (GET/POST), plus `PATCH /:id`, `POST /:id/snooze`, `POST /:id/complete`. — `services/api/src/domains/reminders/{repository,schema,service,routes}.ts`, migration in `001_initial.sql`, `test/reminders.test.ts` (5 passing).
+- [x] Reminder types: feeding, medication (reminder-only, no dose logic), measurement, general — kept as an extensible enum, not hard-coded further (Open Decision #8 still open).
+- [x] Create/edit/snooze/complete flows — implemented both backend (`RemindersService`) and mobile (`app/more/add-reminder.tsx`, `features/reminders/storage.ts`).
+- [x] Timezone-aware scheduling, correct behavior across DST transitions. — `services/api/src/common/util/timezone.ts` (server) and `apps/mobile/features/reminders/schedule.ts` (client, duplicated rather than shared — no cross-package sharing exists yet per Constitution 0.A #1) both resolve wall-clock times via `Intl.DateTimeFormat` per-date, not a fixed UTC offset. `test/timezone.test.ts` pins exact UTC instants either side of the America/New_York 2027 spring-forward transition and confirms the one-hour shift is honored.
+- [x] Missed-reminder UX: neutral status, no shaming copy, easy reschedule. — `ReminderView.missed` is computed (server and client), rendered by the mobile list as "Missed — reschedule" (`features/reminders/rowConfig.ts`); reschedule is a normal edit, not a separate flow.
+- _Acceptance:_ DST-boundary firing verified by `test/timezone.test.ts` (explicit unit test, not yet the full QA-17.1 device-level scenario). Missed-reminder copy reviewed — neutral, no guilt language. **Gap flagged:** mobile reminders are local-first only (SQLite `reminders` table in `lib/offline/database.ts`) and schedule *local* device notifications directly — they are not yet synced to/from the backend `reminders` API (same not-yet-reconciled pattern as Growth in 2.2; Phase 5 wires local and backend together).
 
 **3.3 Notifications infrastructure**
 
-- [ ] Local + push notification delivery via APNs/FCM abstraction from 0.1.
-- [ ] Notification copy pass: concise, calm, non-judgmental, no alarming language absent an approved clinical safety workflow.
-- _Acceptance:_ Notifications deliver reliably on both platforms; copy review sign-off recorded.
+- [x] Local notification delivery via the Expo Notifications abstraction. — `apps/mobile/features/reminders/notifications.ts` wraps `expo-notifications` (permission request, schedule/cancel by id, Android channel setup); called from `features/reminders/storage.ts` on every create/edit/snooze/complete so the scheduled notification always matches current reminder state.
+- [ ] Push notification delivery (APNs/FCM via a server-side dispatch path). — **Gap flagged:** no device-token registration or server-triggered push exists; only on-device local notifications are wired up, which only fire while this install has ever scheduled them (won't survive an uninstall/reinstall or notify from another device). Full push requires the Phase 5 sync/backend-notification work.
+- [x] Notification copy pass: concise, calm, non-judgmental. — Fixed copy ("A gentle reminder from PreemieTrack.") reviewed; no alarming language.
+- _Acceptance:_ Local notifications deliver on-device (verified by code path + Expo Notifications API usage; **not yet click-verified on a simulator/device** in this pass — needs an iOS/Android run to confirm the permission prompt and scheduled delivery end-to-end). Push delivery acceptance is unmet per the gap above.
+- **Fixed 2026-09-07 (post-review, device-reported):** importing `expo-notifications` at module scope crashed every screen that transitively imported `features/reminders/notifications.ts` on Android inside Expo Go — as of Expo SDK 53, Expo Go no longer supports Android remote push, and the module throws synchronously on import as a side effect of its push-token auto-registration (not something `try/catch` around individual calls can prevent, since the throw happens at `require` time). Fixed by lazy-loading the module via `require('expo-notifications')` behind a `try/catch` in `notifications.ts`, caching the result (or `null` on failure) so every exported function degrades to "no device notification scheduled" instead of crashing — the reminder itself still saves and displays normally either way (Section 16: no error here may block core tracking). A development build (not Expo Go) is unaffected. Not yet confirmed this restores the screen on the reporting device — only reasoned from the stack trace and Expo's documented SDK 53 change.
 
 ---
 
@@ -589,27 +593,27 @@ Each `domains/<name>/` folder contains its own `routes.ts`, `service.ts` (busine
 
 **4.1 Sharing (FR-016, SCR-17)**
 
-- [ ] `ShareGrant` entity; `/v1/babies/{id}/shares` (GET/POST).
-- [ ] Invite caregiver flow, read/write permission levels, explicit consent capture.
-- [ ] Revocation flow with **immediate** access denial (test explicitly).
-- _Acceptance:_ Revoking access blocks the revoked caregiver from all reads/writes within the same session (no cached-permission bypass) — verified via QA 17.1 scenario.
+- [x] `ShareGrant` entity; `/v1/babies/{id}/shares` (GET/POST/DELETE). — `services/api/src/domains/sharing/{repository,schema,service,routes}.ts`, migration table `share_grants` in `001_initial.sql`, covered by `test/sharing.test.ts` (4 passing).
+- [x] Invite caregiver flow, read/write permission levels, explicit consent capture. — `POST /v1/babies/{id}/shares` is itself the consent-capture point (a grant only exists because this call was made); mobile: `app/more/share-data.tsx`.
+- [x] Revocation flow with **immediate** access denial (test explicitly). — `DELETE /v1/babies/{id}/shares/{id}` sets `revokedAt` synchronously in the same in-memory store `hasActiveAccess()` reads; `sharing.test.ts` asserts the very next list call reflects the revocation.
+- _Acceptance:_ Verified at the service level (immediate, same-store revocation + audit trail). **Gap flagged:** `hasActiveAccess()` exists as the authorization check every baby-scoped resource should call, but no route actually calls it yet — there is no session/auth middleware in the app at all (Phase 0.3 still unstarted), so there is nothing today that a revoked grant could still bypass. Full QA-17.1 cross-session verification is blocked on Phase 0.3/5.2, not on this task.
 
 **4.2 Reports & export (FR-015, SCR-16)**
 
-- [ ] `/v1/babies/{id}/reports` (POST) — date range + category selection.
-- [ ] Report contents: baby profile, actual/corrected age context, measurement history, care-event summary, timestamps.
-- [ ] Clearly label data as caregiver-entered unless measurement source is verified.
-- [ ] PDF/CSV export preserving units and timestamps.
-- [ ] Sharing a generated report is a one-time action — must **not** grant ongoing account access.
-- _Acceptance:_ Generated report correctly reflects selected date range/categories with correct units/timestamps; sharing the report file does not create any new ShareGrant.
+- [x] `/v1/babies/{id}/reports` (POST) — date range + category selection. — `services/api/src/domains/reports/{schema,service,routes}.ts`, covered by `test/reports.test.ts` (4 passing). Reports are generated on demand (not a stored entity per Section 7), reading across Baby Profile/Care Events/Growth through each domain's own service (Constitution 0.A #3) — `server.ts` now constructs one shared service instance per domain per `buildServer()` call and threads it to every domain that needs cross-domain reads, rather than each domain owning a private instance.
+- [x] Report contents: baby profile, actual/corrected age context, measurement history, care-event summary, timestamps. — Age context reuses the same signed-corrected-age math as the mobile client, ported server-side in `services/api/src/common/util/age.ts` (duplicated rather than shared, same precedent as `timezone.ts` — Constitution 0.A #1).
+- [x] Clearly label data as caregiver-entered unless measurement source is verified. — Each care event in the summary carries `dataSource: 'caregiver-entered' | 'device'`, read from the existing `measurementSource` field.
+- [~] PDF/CSV export preserving units and timestamps. — CSV implemented (`?format=csv` / `format: 'csv'` body field), verified by test. **Gap flagged:** no PDF export — the backend has no PDF library today and none was added without confirming that's wanted (no network-dependent dependency added silently); CSV covers the export requirement for now.
+- [x] Sharing a generated report is a one-time action — must **not** grant ongoing account access. — Nothing about report generation touches the `ShareGrant` store; verified by `reports.test.ts`.
+- _Acceptance:_ Verified by `test/reports.test.ts` (date range, category filtering, CSV format, no-ShareGrant-created). Mobile: `app/more/reports.tsx` (date range pickers, summary view, CSV export via the OS share sheet), backed by a new thin `lib/api/*` client (Sharing/Reports/Privacy are the first mobile features that call the backend directly rather than through the offline SQLite path, since inviting a caregiver or generating a report is inherently server-mediated, not local capture) — **not click-verified on-device in this pass.** **Gap flagged:** the mobile app still has no server-side baby (Baby Setup / `POST /v1/babies` from the client, Section 0.4, is unstarted) — `LOCAL_BABY_ID` is a local-only SQLite id, so these screens will 404/error against a real backend until Phase 0.4 wires baby-profile creation through to the API. The screens, API client, and backend are each independently correct and tested; only that final id-reconciliation link is missing, same category of gap already flagged for Growth (2.2) and Reminders (3.2).
 
 **4.3 Privacy controls (FR-018)**
 
-- [ ] Data export (self-service, distinct from clinician report export).
-- [ ] Deletion request workflow (policy pending Open Decision #9 — implement the request/approval pipeline even if final retention period is TBD).
-- [ ] Account management (profile edit, sign-out, session revocation across devices).
-- [ ] Sharing control surfaced in Settings/More.
-- _Acceptance:_ User can request data export and initiate account/data deletion; deletion request is logged and enters the defined workflow even if final auto-purge timing is still pending sign-off.
+- [x] Data export (self-service, distinct from clinician report export). — `GET /v1/account/export` (`services/api/src/domains/identity/service.ts#exportAccount`) aggregates every baby + its care events/growth/reminders/share grants for the account, via each domain's service. Mobile: `app/more/settings.tsx` → "Export my data" (OS share sheet).
+- [x] Deletion request workflow (policy pending Open Decision #9 — implement the request/approval pipeline even if final retention period is TBD). — `POST/GET /v1/account/deletion-requests`, `POST /v1/account/deletion-requests/{id}/cancel`; requests only ever reach `pending`/`cancelled` — no auto-purge implemented or implied, per the Open Decision #9 rule (Section 9). Migration table `deletion_requests` in `001_initial.sql`.
+- [x] Account management (profile edit, sign-out, session revocation across devices). — `POST /v1/auth/sessions/revoke-all` clears every stored session for an email at once. **Gap flagged:** profile edit already exists via `PATCH /v1/babies/{id}` (baby profile) but there is no separate caregiver/user profile entity yet to edit (Phase 0.3 auth is still a stub, Open Decision #5) — nothing to edit beyond the baby profile today.
+- [x] Sharing control surfaced in Settings/More. — `app/more/share-data.tsx`, linked from More.
+- _Acceptance:_ Covered by `test/privacy.test.ts` (3 passing: account export shape, deletion request create/list/cancel, revoke-all session count). Mobile Settings screen (`app/more/settings.tsx`) surfaces export + deletion request/cancel — **not click-verified on-device in this pass.**
 
 ---
 
