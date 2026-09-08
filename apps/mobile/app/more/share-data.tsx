@@ -9,9 +9,8 @@ import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { colors, radius, space, type } from '@/lib/design-system/tokens';
 import { confirmDestructive } from '@/lib/confirm';
-import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
-import { ApiError } from '@/lib/api/client';
 import { inviteCaregiver, listShares, revokeShare, ShareGrant, SharePermission } from '@/lib/api/sharing';
+import { requireServerBabyId } from '@/lib/offline/serverBaby';
 
 const permissionOptions: SharePermission[] = ['read', 'write'];
 const permissionLabels: Record<SharePermission, string> = { read: 'Can view', write: 'Can edit' };
@@ -27,10 +26,11 @@ export default function ShareData() {
   const load = useCallback(async () => {
     try {
       setError(undefined);
-      const list = await listShares(LOCAL_BABY_ID);
+      const babyId = await requireServerBabyId();
+      const list = await listShares(babyId);
       setGrants(list);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load sharing settings.');
+      setError(err instanceof Error ? err.message : 'Could not load sharing settings.');
     } finally {
       setLoading(false);
     }
@@ -94,13 +94,14 @@ export default function ShareData() {
           onPress={async () => {
             setInviting(true);
             try {
-              await inviteCaregiver(LOCAL_BABY_ID, { recipientEmail: email.trim(), permission });
+              const babyId = await requireServerBabyId();
+              await inviteCaregiver(babyId, { recipientEmail: email.trim(), permission });
               setEmail('');
               await load();
             } catch (err) {
               Alert.alert(
                 'Could not send invite',
-                err instanceof ApiError ? err.message : 'Something went wrong.',
+                err instanceof Error ? err.message : 'Something went wrong.',
               );
             } finally {
               setInviting(false);
@@ -140,12 +141,13 @@ export default function ShareData() {
                 `${grant.granteeEmail} will immediately lose access to this baby's data.`,
                 async () => {
                   try {
-                    await revokeShare(LOCAL_BABY_ID, grant.id);
+                    const babyId = await requireServerBabyId();
+                    await revokeShare(babyId, grant.id);
                     await load();
                   } catch (err) {
                     Alert.alert(
                       'Could not revoke access',
-                      err instanceof ApiError ? err.message : 'Something went wrong.',
+                      err instanceof Error ? err.message : 'Something went wrong.',
                     );
                   }
                 },

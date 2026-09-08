@@ -12,11 +12,13 @@ export function Button({
   children: ReactNode;
   onPress?: () => void;
   disabled?: boolean;
-  variant?: 'primary' | 'destructive';
+  variant?: 'primary' | 'secondary' | 'destructive';
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }) {
-  const bg = variant === 'destructive' ? colors.danger : colors.violet;
+  const bg =
+    variant === 'destructive' ? colors.danger : variant === 'secondary' ? colors.violetSoft : colors.violet;
+  const fg = variant === 'secondary' ? colors.violet : colors.white;
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,7 +39,7 @@ export function Button({
     >
       <Text
         allowFontScaling
-        style={{ color: colors.white, fontSize: type.body, fontWeight: '700' }}
+        style={{ color: disabled ? colors.muted : fg, fontSize: type.body, fontWeight: '700' }}
       >
         {children}
       </Text>

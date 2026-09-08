@@ -1,6 +1,7 @@
 import * as Crypto from 'expo-crypto';
 import {
   CareEventRow,
+  getCareEventById,
   getLatestCareEventsByType,
   insertCareEvent,
   listCareEvents,
@@ -8,6 +9,7 @@ import {
   softDeleteCareEvent,
   updateCareEvent,
 } from '@/lib/offline/database';
+import { toServerEventData } from './serverPayload';
 import { CareEvent, CareEventData, CareEventType } from './types';
 import { validateCareEventData } from './validation';
 
@@ -58,7 +60,7 @@ export async function saveCareEvent(input: SaveCareEventInput): Promise<string> 
       babyId: input.babyId,
       type: input.type,
       occurredAt,
-      data: input.data,
+      data: toServerEventData(input.type, input.data),
       notes: input.notes,
       idempotencyKey: id,
     }),
@@ -84,6 +86,9 @@ export async function editCareEvent(
   id: string,
   patch: { occurredAt?: Date; data?: CareEventData; notes?: string },
 ) {
+  const existing = await getCareEventById(id);
+  if (!existing) throw new Error('Care event not found');
+
   await updateCareEvent(id, {
     occurredAt: patch.occurredAt?.toISOString(),
     data: patch.data,
@@ -92,15 +97,29 @@ export async function editCareEvent(
   await queueMutation(
     Crypto.randomUUID(),
     'care-event-update',
-    JSON.stringify({ id, ...patch, occurredAt: patch.occurredAt?.toISOString() }),
+    JSON.stringify({
+      id,
+      babyId: existing.baby_id,
+      occurredAt: patch.occurredAt?.toISOString(),
+      data: patch.data
+        ? toServerEventData(existing.type as CareEventType, patch.data)
+        : undefined,
+      notes: patch.notes,
+      // Only meaningful once the server has ever confirmed a version of this
+      // event; before that, there is nothing on the server to conflict with.
+      expectedUpdatedAt: existing.server_updated_at ?? undefined,
+    }),
   );
 }
 
 export async function deleteCareEvent(id: string) {
+  const existing = await getCareEventById(id);
+  if (!existing) return;
+
   await softDeleteCareEvent(id);
   await queueMutation(
     Crypto.randomUUID(),
     'care-event-delete',
-    JSON.stringify({ id }),
+    JSON.stringify({ id, babyId: existing.baby_id }),
   );
 }

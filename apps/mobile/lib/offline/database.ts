@@ -12,19 +12,50 @@ import * as SQLite from 'expo-sqlite';
 // concurrent or not, awaits that same promise.
 let dbPromise: Promise<SQLite.SQLiteDatabase> | undefined;
 
+// SQLite has no "ADD COLUMN IF NOT EXISTS" — an install that already created
+// a table before a column was added to this schema needs that column
+// bolted on explicitly. Swallow only the "duplicate column" error a fresh
+// install (whose CREATE TABLE already includes the column) produces here;
+// anything else is a real failure and should surface.
+async function addColumnIfMissing(
+  database: SQLite.SQLiteDatabase,
+  table: string,
+  columnDefinition: string,
+) {
+  try {
+    await database.execAsync(`ALTER TABLE ${table} ADD COLUMN ${columnDefinition};`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!/duplicate column name/i.test(message)) throw error;
+  }
+}
+
 async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   const database = await SQLite.openDatabaseAsync('preemietrack.db');
   await database.execAsync(
     `PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS baby_profiles (id TEXT PRIMARY KEY NOT NULL, payload TEXT NOT NULL, updated_at TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS mutation_queue (id TEXT PRIMARY KEY NOT NULL, entity_type TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL, sync_state TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS care_events (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, type TEXT NOT NULL, occurred_at TEXT NOT NULL, data TEXT NOT NULL, notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT);
+    CREATE TABLE IF NOT EXISTS mutation_queue (id TEXT PRIMARY KEY NOT NULL, entity_type TEXT NOT NULL, payload TEXT NOT NULL, created_at TEXT NOT NULL, sync_state TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at TEXT, last_error TEXT);
+    CREATE TABLE IF NOT EXISTS sync_conflicts (id TEXT PRIMARY KEY NOT NULL, mutation_id TEXT NOT NULL, entity_type TEXT NOT NULL, entity_id TEXT NOT NULL, local_payload TEXT NOT NULL, server_payload TEXT NOT NULL, created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS care_events (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, type TEXT NOT NULL, occurred_at TEXT NOT NULL, data TEXT NOT NULL, notes TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, deleted_at TEXT, server_updated_at TEXT);
     CREATE INDEX IF NOT EXISTS care_events_baby_type_idx ON care_events (baby_id, type, occurred_at DESC);
     CREATE TABLE IF NOT EXISTS growth_measurements (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL, unit TEXT NOT NULL, measured_at TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS growth_measurements_baby_metric_idx ON growth_measurements (baby_id, metric, measured_at);
     CREATE TABLE IF NOT EXISTS reminders (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, type TEXT NOT NULL, title TEXT NOT NULL, time_of_day TEXT NOT NULL, days_of_week TEXT NOT NULL, timezone TEXT NOT NULL, enabled INTEGER NOT NULL, status TEXT NOT NULL, snoozed_until TEXT, last_completed_at TEXT, notification_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS reminders_baby_idx ON reminders (baby_id);`,
   );
+
+  // Phase 5 additions — backfilled onto any pre-existing install (the two
+  // CREATE TABLE statements above only take full effect on a brand-new db).
+  await addColumnIfMissing(database, 'mutation_queue', 'attempts INTEGER NOT NULL DEFAULT 0');
+  await addColumnIfMissing(database, 'mutation_queue', 'next_attempt_at TEXT');
+  await addColumnIfMissing(database, 'mutation_queue', 'last_error TEXT');
+  await addColumnIfMissing(database, 'care_events', 'server_updated_at TEXT');
+
+  await database.execAsync(
+    'CREATE INDEX IF NOT EXISTS mutation_queue_state_idx ON mutation_queue (sync_state, next_attempt_at);',
+  );
+
   return database;
 }
 
@@ -72,6 +103,97 @@ export async function queueMutation(
   );
 }
 
+export type MutationQueueRow = {
+  id: string;
+  entity_type: string;
+  payload: string;
+  created_at: string;
+  sync_state: string;
+  attempts: number;
+  next_attempt_at: string | null;
+  last_error: string | null;
+};
+
+// Only mutations whose backoff window has elapsed (or that have never failed
+// yet) are eligible for the next sync attempt (5.1 exponential backoff).
+export async function listPendingMutations(): Promise<MutationQueueRow[]> {
+  const database = await getDatabase();
+  return database.getAllAsync<MutationQueueRow>(
+    `SELECT * FROM mutation_queue
+     WHERE sync_state = 'pending' AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
+     ORDER BY created_at ASC`,
+    new Date().toISOString(),
+  );
+}
+
+export async function markMutationSynced(id: string) {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM mutation_queue WHERE id = ?', id);
+}
+
+export async function markMutationFailed(
+  id: string,
+  attempts: number,
+  nextAttemptAt: string,
+  lastError: string,
+) {
+  const database = await getDatabase();
+  await database.runAsync(
+    'UPDATE mutation_queue SET attempts = ?, next_attempt_at = ?, last_error = ? WHERE id = ?',
+    attempts,
+    nextAttemptAt,
+    lastError,
+    id,
+  );
+}
+
+// A conflict is pulled out of the retry loop entirely — retrying a
+// conflicting edit against an unchanged expectedUpdatedAt would just produce
+// the same conflict forever. It waits here for the caregiver to resolve it.
+export async function recordConflict(conflict: {
+  id: string;
+  mutationId: string;
+  entityType: string;
+  entityId: string;
+  localPayload: unknown;
+  serverPayload: unknown;
+}) {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM mutation_queue WHERE id = ?', conflict.mutationId);
+  await database.runAsync(
+    'INSERT INTO sync_conflicts (id, mutation_id, entity_type, entity_id, local_payload, server_payload, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    conflict.id,
+    conflict.mutationId,
+    conflict.entityType,
+    conflict.entityId,
+    JSON.stringify(conflict.localPayload),
+    JSON.stringify(conflict.serverPayload),
+    new Date().toISOString(),
+  );
+}
+
+export type SyncConflictRow = {
+  id: string;
+  mutation_id: string;
+  entity_type: string;
+  entity_id: string;
+  local_payload: string;
+  server_payload: string;
+  created_at: string;
+};
+
+export async function listConflicts(): Promise<SyncConflictRow[]> {
+  const database = await getDatabase();
+  return database.getAllAsync<SyncConflictRow>(
+    'SELECT * FROM sync_conflicts ORDER BY created_at ASC',
+  );
+}
+
+export async function deleteConflict(id: string) {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM sync_conflicts WHERE id = ?', id);
+}
+
 export type CareEventRow = {
   id: string;
   baby_id: string;
@@ -82,6 +204,7 @@ export type CareEventRow = {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  server_updated_at: string | null;
 };
 
 export async function insertCareEvent(event: {
@@ -104,6 +227,51 @@ export async function insertCareEvent(event: {
     event.notes ?? null,
     now,
     now,
+  );
+}
+
+export async function getCareEventById(id: string): Promise<CareEventRow | undefined> {
+  const database = await getDatabase();
+  const rows = await database.getAllAsync<CareEventRow>(
+    'SELECT * FROM care_events WHERE id = ?',
+    id,
+  );
+  return rows[0];
+}
+
+// Used when a caregiver resolves a conflict by accepting the server's
+// version — replaces the local row outright rather than going through the
+// normal patch path, since we're not merging, just adopting the server copy.
+export async function overwriteCareEventFromServer(event: {
+  id: string;
+  occurredAt: string;
+  data: unknown;
+  notes?: string;
+  updatedAt: string;
+}) {
+  const database = await getDatabase();
+  await database.runAsync(
+    'UPDATE care_events SET occurred_at = ?, data = ?, notes = ?, updated_at = ?, server_updated_at = ? WHERE id = ?',
+    event.occurredAt,
+    JSON.stringify(event.data),
+    event.notes ?? null,
+    event.updatedAt,
+    event.updatedAt,
+    event.id,
+  );
+}
+
+// Records the server's canonical updatedAt after a create/update mutation is
+// confirmed applied — this, not the locally-touched updated_at, is what the
+// next edit's conflict check (expectedUpdatedAt) is based against, so two
+// purely-local edits made before either has synced don't spuriously
+// conflict with each other.
+export async function setServerUpdatedAt(id: string, serverUpdatedAt: string) {
+  const database = await getDatabase();
+  await database.runAsync(
+    'UPDATE care_events SET server_updated_at = ? WHERE id = ?',
+    serverUpdatedAt,
+    id,
   );
 }
 

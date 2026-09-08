@@ -6,9 +6,8 @@ import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { DatePicker } from '@/components/forms/DatePicker';
 import { colors, space, type } from '@/lib/design-system/tokens';
-import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
-import { ApiError } from '@/lib/api/client';
 import { generateReport, generateReportCsv, ReportResult } from '@/lib/api/reports';
+import { requireServerBabyId } from '@/lib/offline/serverBaby';
 
 function formatAge(age: { weeks: number; days: number }) {
   return `${age.weeks}w ${age.days}d`;
@@ -26,11 +25,12 @@ export default function Reports() {
     setLoading(true);
     setError(undefined);
     try {
-      const result = await generateReport(LOCAL_BABY_ID, { from, to });
+      const babyId = await requireServerBabyId();
+      const result = await generateReport(babyId, { from, to });
       setReport(result);
     } catch (err) {
       setError(
-        err instanceof ApiError
+        err instanceof Error
           ? err.message
           : 'Could not generate the report. Check your connection and try again.',
       );
@@ -43,14 +43,15 @@ export default function Reports() {
   const exportCsv = async () => {
     setExporting(true);
     try {
-      const csv = await generateReportCsv(LOCAL_BABY_ID, { from, to });
+      const babyId = await requireServerBabyId();
+      const csv = await generateReportCsv(babyId, { from, to });
       // A one-time export — sharing the resulting file never grants ongoing
       // account access (Section 15), unlike Share Data's caregiver invites.
       await Share.share({ message: csv, title: 'PreemieTrack report (CSV)' });
     } catch (err) {
       Alert.alert(
         'Could not export report',
-        err instanceof ApiError ? err.message : 'Something went wrong.',
+        err instanceof Error ? err.message : 'Something went wrong.',
       );
     } finally {
       setExporting(false);
