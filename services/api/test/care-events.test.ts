@@ -1,8 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildServer } from '../src/server.js';
-
-const babyId = randomUUID();
+import { createTestBaby, testTokenVerifier, testUser } from './helpers/auth.js';
 
 function feedingPayload(idempotencyKey = randomUUID()) {
   return {
@@ -16,15 +15,20 @@ function feedingPayload(idempotencyKey = randomUUID()) {
 
 describe('care events', () => {
   let app: ReturnType<typeof buildServer>;
+  let babyId: string;
+  let headers: Record<string, string>;
 
-  beforeEach(() => {
-    app = buildServer();
+  beforeEach(async () => {
+    app = buildServer({ tokenVerifier: testTokenVerifier });
+    headers = testUser().authHeader;
+    babyId = await createTestBaby(app, headers);
   });
 
   it('creates and lists an event', async () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: feedingPayload(),
     });
     expect(create.statusCode).toBe(201);
@@ -34,6 +38,7 @@ describe('care events', () => {
     const list = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/events`,
+      headers,
     });
     expect(list.json()).toHaveLength(1);
   });
@@ -43,16 +48,19 @@ describe('care events', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: feedingPayload(key),
     });
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: feedingPayload(key),
     });
     const list = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/events`,
+      headers,
     });
     expect(list.json()).toHaveLength(1);
   });
@@ -61,6 +69,7 @@ describe('care events', () => {
     const response = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: {
         type: 'feeding',
         occurredAt: new Date().toISOString(),
@@ -75,6 +84,7 @@ describe('care events', () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: feedingPayload(),
     });
     const eventId = create.json().id;
@@ -82,6 +92,7 @@ describe('care events', () => {
     const update = await app.inject({
       method: 'PATCH',
       url: `/v1/babies/${babyId}/events/${eventId}`,
+      headers,
       payload: { notes: 'Updated note' },
     });
     expect(update.json().notes).toBe('Updated note');
@@ -89,18 +100,21 @@ describe('care events', () => {
     const remove = await app.inject({
       method: 'DELETE',
       url: `/v1/babies/${babyId}/events/${eventId}`,
+      headers,
     });
     expect(remove.statusCode).toBe(204);
 
     const list = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/events`,
+      headers,
     });
     expect(list.json()).toHaveLength(0);
 
     const audit = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/audit`,
+      headers,
     });
     const actions = audit.json().map((entry: { action: string }) => entry.action);
     expect(actions).toEqual(
@@ -112,6 +126,7 @@ describe('care events', () => {
     const response = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: {
         type: 'medication',
         occurredAt: new Date().toISOString(),
@@ -127,5 +142,15 @@ describe('care events', () => {
     expect(keys.some((key) => /recommend|suggested|max-?dose/i.test(key))).toBe(
       false,
     );
+  });
+
+  it("rejects a request for another user's baby", async () => {
+    const otherHeaders = testUser().authHeader;
+    const response = await app.inject({
+      method: 'GET',
+      url: `/v1/babies/${babyId}/events`,
+      headers: otherHeaders,
+    });
+    expect(response.statusCode).toBe(403);
   });
 });

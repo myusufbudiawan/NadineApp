@@ -4,6 +4,8 @@ export function validateBaby(
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   if (!input.name?.trim()) errors.name = 'Enter your baby’s name.';
+  if (input.sex !== 'girl' && input.sex !== 'boy')
+    errors.sex = 'Select girl or boy.';
   if (
     !input.dateOfBirth ||
     Number.isNaN(new Date(input.dateOfBirth).valueOf()) ||

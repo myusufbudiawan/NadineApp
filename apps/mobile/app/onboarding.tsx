@@ -103,10 +103,10 @@ export default function Onboarding() {
           information and sharing.
         </Text>
       </Card>
-      <Button onPress={() => router.push('/baby-setup')}>Get started</Button>
+      <Button onPress={() => router.push('/login?mode=signup')}>Get started</Button>
       <Text
         accessibilityRole="link"
-        onPress={() => router.replace('/(tabs)/home')}
+        onPress={() => router.push('/login?mode=signin')}
         style={{
           textAlign: 'center',
           color: colors.violet,

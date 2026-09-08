@@ -1,7 +1,16 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import { useSync } from '@/hooks/useSync';
 export default function RootLayout() {
+  // Drains the offline mutation queue on launch, on every foreground, and
+  // on a background interval (Section 11 5.1) — mounted once at the root so
+  // it runs regardless of which tab/screen is active. Every server route
+  // now requires a signed-in account, so there's nothing to sync until
+  // someone is actually logged in.
+  const { session } = useAuthSession();
+  useSync(Boolean(session));
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
@@ -38,9 +47,16 @@ export default function RootLayout() {
           options={{ presentation: 'card' }}
         />
         <Stack.Screen
+          name="track/add-growth"
+          options={{ presentation: 'card' }}
+        />
+        <Stack.Screen
           name="track/history/[type]"
           options={{ presentation: 'card' }}
         />
+        <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
+        <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
+        <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
       </Stack>
     </SafeAreaProvider>
   );

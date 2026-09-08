@@ -8,6 +8,21 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      SUPABASE_JWKS_URL: http://localhost/not-used-in-tests/jwks.json
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -15,6 +30,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Set up test database schema
+        run: |
+          psql "$DATABASE_URL" -c "CREATE ROLE service_role;"
+          psql "$DATABASE_URL" -c "CREATE SCHEMA IF NOT EXISTS auth; CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT, raw_user_meta_data JSONB);"
+          psql "$DATABASE_URL" -f services/api/src/common/db/migrations/001_initial.sql
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test

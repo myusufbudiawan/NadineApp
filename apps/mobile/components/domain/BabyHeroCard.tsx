@@ -35,9 +35,9 @@ export function BabyHeroCard({
             imageUrl ? `Change ${name}'s photo` : `Add a photo of ${name}`
           }
           style={{
-            width: 112,
-            height: 205,
-            borderRadius: 14,
+            width: 152,
+            height: 240,
+            borderRadius: 18,
             overflow: 'hidden',
             backgroundColor: '#E8D7CE',
             justifyContent: 'center',
@@ -51,7 +51,7 @@ export function BabyHeroCard({
             />
           ) : (
             <>
-              <Ionicons name="heart" size={38} color={colors.pink} />
+              <Ionicons name="person" size={52} color={colors.pink} />
               {onPressPhoto && (
                 <View
                   style={{
@@ -72,8 +72,8 @@ export function BabyHeroCard({
           )}
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>
-            {name} <Text style={{ color: colors.pink }}>♥</Text>
+          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text }}>
+            {name}
           </Text>
           {bornSummary && (
             <Text
