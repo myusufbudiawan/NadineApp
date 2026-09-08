@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { NotFoundError } from '../../common/auth/errors.js';
 import { AuditService } from '../audit/service.js';
 import {
   CareEventRepository,
   CareEventType,
   StoredCareEvent,
 } from './repository.js';
-
-const actorId = 'development-user';
 
 export type CreateCareEventInput = {
   type: CareEventType;
@@ -18,7 +17,19 @@ export type CreateCareEventInput = {
 
 export type PatchCareEventInput = Partial<
   Pick<StoredCareEvent, 'occurredAt' | 'data' | 'notes'>
->;
+> & {
+  // Optimistic-concurrency check for the sync engine (5.1): the client's
+  // last-known updatedAt. If it no longer matches the server's copy, someone
+  // else changed the record first — surface a conflict instead of silently
+  // overwriting their edit.
+  expectedUpdatedAt?: Date;
+};
+
+export class ConflictError extends Error {
+  constructor(public readonly current: StoredCareEvent) {
+    super('Care event was modified by another device');
+  }
+}
 
 /* Event lifecycle; never exposes clinical advice. */
 export class CareEventsService {
@@ -31,7 +42,7 @@ export class CareEventsService {
     return this.repository.list(babyId, type);
   }
 
-  async create(babyId: string, input: CreateCareEventInput) {
+  async create(actorId: string, babyId: string, input: CreateCareEventInput) {
     const existing = await this.repository.findByIdempotencyKey(
       babyId,
       input.idempotencyKey,
@@ -60,11 +71,18 @@ export class CareEventsService {
     return event;
   }
 
-  async update(babyId: string, id: string, patch: PatchCareEventInput) {
+  async update(actorId: string, babyId: string, id: string, patch: PatchCareEventInput) {
     const existing = await this.repository.findById(babyId, id);
-    if (!existing) throw new Error('Care event not found');
+    if (!existing) throw new NotFoundError('Care event not found');
+    if (
+      patch.expectedUpdatedAt &&
+      patch.expectedUpdatedAt.getTime() !== existing.updatedAt.getTime()
+    ) {
+      throw new ConflictError(existing);
+    }
+    const { expectedUpdatedAt: _expectedUpdatedAt, ...fields } = patch;
     const event = await this.repository.update(id, {
-      ...patch,
+      ...fields,
       updatedAt: new Date(),
     });
     await this.audit.record({
@@ -77,9 +95,9 @@ export class CareEventsService {
     return event;
   }
 
-  async remove(babyId: string, id: string) {
+  async remove(actorId: string, babyId: string, id: string) {
     const existing = await this.repository.findById(babyId, id);
-    if (!existing) throw new Error('Care event not found');
+    if (!existing) throw new NotFoundError('Care event not found');
     const event = await this.repository.softDelete(id);
     await this.audit.record({
       actorId,

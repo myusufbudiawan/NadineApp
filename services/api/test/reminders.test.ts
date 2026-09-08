@@ -1,8 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildServer } from '../src/server.js';
-
-const babyId = randomUUID();
+import { createTestBaby, testTokenVerifier, testUser } from './helpers/auth.js';
 
 function reminderPayload(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -18,22 +16,27 @@ function reminderPayload(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe('reminders', () => {
   let app: ReturnType<typeof buildServer>;
+  let babyId: string;
+  let headers: Record<string, string>;
 
-  beforeEach(() => {
-    app = buildServer();
+  beforeEach(async () => {
+    app = buildServer({ tokenVerifier: testTokenVerifier });
+    headers = testUser().authHeader;
+    babyId = await createTestBaby(app, headers);
   });
 
   it('creates and lists a reminder with a computed next-fire time', async () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders`,
+      headers,
       payload: reminderPayload(),
     });
     expect(create.statusCode).toBe(201);
     expect(create.json()).toMatchObject({ title: 'Feed baby', status: 'pending' });
     expect(create.json().nextFiresAt).toBeTruthy();
 
-    const list = await app.inject({ method: 'GET', url: `/v1/babies/${babyId}/reminders` });
+    const list = await app.inject({ method: 'GET', url: `/v1/babies/${babyId}/reminders`, headers });
     expect(list.json()).toHaveLength(1);
   });
 
@@ -41,6 +44,7 @@ describe('reminders', () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders`,
+      headers,
       payload: reminderPayload(),
     });
     const id = create.json().id;
@@ -48,6 +52,7 @@ describe('reminders', () => {
     const update = await app.inject({
       method: 'PATCH',
       url: `/v1/babies/${babyId}/reminders/${id}`,
+      headers,
       payload: { title: 'Feed baby (updated)' },
     });
     expect(update.json().title).toBe('Feed baby (updated)');
@@ -57,6 +62,7 @@ describe('reminders', () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders`,
+      headers,
       payload: reminderPayload(),
     });
     const id = create.json().id;
@@ -64,6 +70,7 @@ describe('reminders', () => {
     const snooze = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders/${id}/snooze`,
+      headers,
       payload: { minutes: 15 },
     });
     expect(snooze.json().status).toBe('snoozed');
@@ -79,6 +86,7 @@ describe('reminders', () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders`,
+      headers,
       payload: reminderPayload({ timeOfDay: pastTimeOfDay }),
     });
     expect(create.json().missed).toBe(true);
@@ -87,26 +95,26 @@ describe('reminders', () => {
     const complete = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reminders/${id}/complete`,
+      headers,
     });
     expect(complete.json().missed).toBe(false);
     expect(complete.json().lastCompletedAt).toBeTruthy();
   });
 
   it('records audit entries for create and complete', async () => {
-    // A fresh babyId per test, since AuditService is a process-wide singleton
-    // shared across tests within this file (same pattern as growth.test.ts).
-    const freshBabyId = randomUUID();
     const create = await app.inject({
       method: 'POST',
-      url: `/v1/babies/${freshBabyId}/reminders`,
+      url: `/v1/babies/${babyId}/reminders`,
+      headers,
       payload: reminderPayload(),
     });
     await app.inject({
       method: 'POST',
-      url: `/v1/babies/${freshBabyId}/reminders/${create.json().id}/complete`,
+      url: `/v1/babies/${babyId}/reminders/${create.json().id}/complete`,
+      headers,
     });
 
-    const audit = await app.inject({ method: 'GET', url: `/v1/babies/${freshBabyId}/audit` });
+    const audit = await app.inject({ method: 'GET', url: `/v1/babies/${babyId}/audit`, headers });
     const entityTypes = audit.json().map((entry: { entityType: string }) => entry.entityType);
     expect(entityTypes.filter((t: string) => t === 'reminder')).toHaveLength(2);
   });

@@ -1,8 +1,6 @@
-import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildServer } from '../src/server.js';
-
-const babyId = randomUUID();
+import { createTestBaby, testTokenVerifier, testUser } from './helpers/auth.js';
 
 function weightPayload(overrides: Partial<Record<string, unknown>> = {}) {
   return {
@@ -16,15 +14,20 @@ function weightPayload(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe('growth measurements', () => {
   let app: ReturnType<typeof buildServer>;
+  let babyId: string;
+  let headers: Record<string, string>;
 
-  beforeEach(() => {
-    app = buildServer();
+  beforeEach(async () => {
+    app = buildServer({ tokenVerifier: testTokenVerifier });
+    headers = testUser().authHeader;
+    babyId = await createTestBaby(app, headers);
   });
 
   it('creates and lists a measurement', async () => {
     const create = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: weightPayload(),
     });
     expect(create.statusCode).toBe(201);
@@ -33,6 +36,7 @@ describe('growth measurements', () => {
     const list = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
     });
     expect(list.json()).toHaveLength(1);
   });
@@ -41,17 +45,20 @@ describe('growth measurements', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: weightPayload(),
     });
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: weightPayload({ metric: 'length', value: 40, unit: 'cm' }),
     });
 
     const list = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/growth?metric=length`,
+      headers,
     });
     const results = list.json();
     expect(results).toHaveLength(1);
@@ -62,6 +69,7 @@ describe('growth measurements', () => {
     const response = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: weightPayload({ value: 999 }),
     });
     expect(response.statusCode).toBe(400);
@@ -71,11 +79,13 @@ describe('growth measurements', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: weightPayload(),
     });
     const audit = await app.inject({
       method: 'GET',
       url: `/v1/babies/${babyId}/audit`,
+      headers,
     });
     const entityTypes = audit.json().map((entry: { entityType: string }) => entry.entityType);
     expect(entityTypes).toContain('growth_measurement');

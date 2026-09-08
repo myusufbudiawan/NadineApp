@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { NotFoundError } from '../../common/auth/errors.js';
 import { AuditService } from '../audit/service.js';
 import { BabyProfileService } from '../baby-profile/service.js';
 import { CareEventsService } from '../care-events/service.js';
 import { GrowthService } from '../growth/service.js';
 import { actualAge, correctedAge } from '../../common/util/age.js';
 import { ReportCategory, ReportInput } from './schema.js';
-
-const actorId = 'development-user';
 
 export type ReportResult = {
   babyId: string;
@@ -70,9 +69,9 @@ export class ReportsService {
     private audit: AuditService,
   ) {}
 
-  async generate(babyId: string, input: ReportInput): Promise<ReportResult> {
+  async generate(actorId: string, babyId: string, input: ReportInput): Promise<ReportResult> {
     const baby = await this.babyProfile.get(babyId);
-    if (!baby) throw new Error('Baby not found');
+    if (!baby) throw new NotFoundError('Baby not found');
 
     const categories = input.categories ?? ([...careEventCategoryList, 'growth'] as ReportCategory[]);
     const now = new Date();

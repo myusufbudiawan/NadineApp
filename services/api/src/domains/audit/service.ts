@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { db } from '../../common/db/client.js';
 import { AuditRepository, StoredAuditEvent } from './repository.js';
+import { PostgresAuditRepository } from './postgres-repository.js';
 
-class InMemoryAuditRepository implements AuditRepository {
+export class InMemoryAuditRepository implements AuditRepository {
   private events: StoredAuditEvent[] = [];
 
   async record(event: StoredAuditEvent) {
@@ -15,7 +17,7 @@ class InMemoryAuditRepository implements AuditRepository {
 }
 
 export class AuditService {
-  constructor(private repository: AuditRepository = new InMemoryAuditRepository()) {}
+  constructor(private repository: AuditRepository) {}
 
   // Sensitive record create/update/delete calls this — actor, action, entity,
   // timestamp only. Never pass the raw event payload here (FR-019).
@@ -34,4 +36,4 @@ export class AuditService {
 
 // Shared across domains within one running server so an audit trail recorded
 // by care-events is visible via the audit domain's own read route.
-export const auditService = new AuditService();
+export const auditService = new AuditService(new PostgresAuditRepository(db));

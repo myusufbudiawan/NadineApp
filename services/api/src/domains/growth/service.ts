@@ -3,8 +3,6 @@ import { AuditService } from '../audit/service.js';
 import { GrowthRepository } from './repository.js';
 import { GrowthInput, GrowthMetric } from './schema.js';
 
-const actorId = 'development-user';
-
 /** NEEDS-CLINICAL-REVIEW: reference/percentile data is intentionally not embedded here. */
 export class GrowthService {
   constructor(
@@ -16,7 +14,7 @@ export class GrowthService {
     return this.repository.list(babyId, metric, from, to);
   }
 
-  async create(babyId: string, input: GrowthInput) {
+  async create(actorId: string, babyId: string, input: GrowthInput) {
     const now = new Date();
     const measurement = await this.repository.create({
       id: randomUUID(),

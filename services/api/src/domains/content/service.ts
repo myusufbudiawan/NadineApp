@@ -6,6 +6,13 @@ import { TipCategory, TipInput } from './schema.js';
 export class ContentService {
   constructor(private repository: ContentRepository) {}
 
+  // Unfiltered count, used only to decide whether startup seeding is needed
+  // (placeholder tips are all 'needs-clinical-review', so list() below would
+  // always report zero for them and reseed duplicates on every restart).
+  async count() {
+    return (await this.repository.list()).length;
+  }
+
   // Only 'approved' content ever reaches a caregiver — 'draft' and
   // 'needs-clinical-review' items exist in storage (so an admin console can
   // list/manage them) but are never returned here (Section 15 guardrail).

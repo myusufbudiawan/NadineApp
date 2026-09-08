@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto';
+import { NotFoundError } from '../../common/auth/errors.js';
 import { AuditService } from '../audit/service.js';
 import { nextOccurrence, previousOccurrence } from '../../common/util/timezone.js';
 import { ReminderRepository, StoredReminder } from './repository.js';
 import { ReminderInput, ReminderUpdateInput } from './schema.js';
-
-const actorId = 'development-user';
 
 export type ReminderView = StoredReminder & {
   nextFiresAt?: Date;
@@ -42,7 +41,7 @@ export class RemindersService {
     return reminders.map((r) => this.toView(r, now));
   }
 
-  async create(babyId: string, input: ReminderInput) {
+  async create(actorId: string, babyId: string, input: ReminderInput) {
     const now = new Date();
     const reminder = await this.repository.create({
       id: randomUUID(),
@@ -69,11 +68,11 @@ export class RemindersService {
 
   private async requireOwned(babyId: string, id: string) {
     const reminder = await this.repository.get(id);
-    if (!reminder || reminder.babyId !== babyId) throw new Error('Reminder not found');
+    if (!reminder || reminder.babyId !== babyId) throw new NotFoundError('Reminder not found');
     return reminder;
   }
 
-  async update(babyId: string, id: string, patch: ReminderUpdateInput) {
+  async update(actorId: string, babyId: string, id: string, patch: ReminderUpdateInput) {
     const existing = await this.requireOwned(babyId, id);
     const updated = await this.repository.update({
       ...existing,
@@ -90,7 +89,7 @@ export class RemindersService {
     return this.toView(updated, new Date());
   }
 
-  async snooze(babyId: string, id: string, minutes: number) {
+  async snooze(actorId: string, babyId: string, id: string, minutes: number) {
     const existing = await this.requireOwned(babyId, id);
     const snoozedUntil = new Date(Date.now() + minutes * 60_000);
     const updated = await this.repository.update({
@@ -109,7 +108,7 @@ export class RemindersService {
     return this.toView(updated, new Date());
   }
 
-  async complete(babyId: string, id: string) {
+  async complete(actorId: string, babyId: string, id: string) {
     const existing = await this.requireOwned(babyId, id);
     const now = new Date();
     const updated = await this.repository.update({

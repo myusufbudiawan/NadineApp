@@ -1,30 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildServer } from '../src/server.js';
-
-function babyPayload(overrides: Partial<Record<string, unknown>> = {}) {
-  return {
-    name: 'Aisyah',
-    sex: 'girl',
-    dateOfBirth: new Date(Date.now() - 30 * 86_400_000).toISOString(),
-    gestationalWeeks: 32,
-    gestationalDays: 3,
-    birthWeightKg: 1.58,
-    fullTermReferenceWeeks: 40,
-    ...overrides,
-  };
-}
+import { createTestBaby, testTokenVerifier, testUser } from './helpers/auth.js';
 
 describe('reports', () => {
   let app: ReturnType<typeof buildServer>;
+  let headers: Record<string, string>;
 
   beforeEach(() => {
-    app = buildServer();
+    app = buildServer({ tokenVerifier: testTokenVerifier });
+    headers = testUser().authHeader;
   });
 
   async function createBaby() {
-    const res = await app.inject({ method: 'POST', url: '/v1/babies', payload: babyPayload() });
-    return res.json().id as string;
+    return createTestBaby(app, headers, { name: 'Aisyah' });
   }
 
   it('generates a report with age context, care events, and measurements', async () => {
@@ -33,6 +22,7 @@ describe('reports', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: {
         type: 'feeding',
         occurredAt: new Date().toISOString(),
@@ -43,6 +33,7 @@ describe('reports', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: { metric: 'weight', value: 1.68, unit: 'kg', measuredAt: new Date().toISOString() },
     });
 
@@ -51,6 +42,7 @@ describe('reports', () => {
     const report = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reports`,
+      headers,
       payload: { from, to },
     });
 
@@ -70,6 +62,7 @@ describe('reports', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/events`,
+      headers,
       payload: {
         type: 'diaper',
         occurredAt: new Date().toISOString(),
@@ -80,6 +73,7 @@ describe('reports', () => {
     await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/growth`,
+      headers,
       payload: { metric: 'weight', value: 1.68, unit: 'kg', measuredAt: new Date().toISOString() },
     });
 
@@ -88,6 +82,7 @@ describe('reports', () => {
     const report = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reports`,
+      headers,
       payload: { from, to, categories: ['diaper'] },
     });
 
@@ -103,6 +98,7 @@ describe('reports', () => {
     const report = await app.inject({
       method: 'POST',
       url: `/v1/babies/${babyId}/reports`,
+      headers,
       payload: { from, to, format: 'csv' },
     });
 
@@ -115,9 +111,14 @@ describe('reports', () => {
     const babyId = await createBaby();
     const from = new Date(Date.now() - 86_400_000).toISOString();
     const to = new Date(Date.now() + 86_400_000).toISOString();
-    await app.inject({ method: 'POST', url: `/v1/babies/${babyId}/reports`, payload: { from, to } });
+    await app.inject({
+      method: 'POST',
+      url: `/v1/babies/${babyId}/reports`,
+      headers,
+      payload: { from, to },
+    });
 
-    const shares = await app.inject({ method: 'GET', url: `/v1/babies/${babyId}/shares` });
+    const shares = await app.inject({ method: 'GET', url: `/v1/babies/${babyId}/shares`, headers });
     expect(shares.json()).toHaveLength(0);
   });
 });

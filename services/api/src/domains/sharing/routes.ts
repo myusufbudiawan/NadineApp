@@ -1,34 +1,43 @@
-import { FastifyInstance } from 'fastify';
-import { auditService } from '../audit/service.js';
-import { InMemoryShareRepository } from './repository.js';
+import { FastifyInstance, FastifyRequest } from 'fastify';
+import { requireBabyAccess } from '../../common/auth/baby-access.js';
+import { ForbiddenError, NotFoundError } from '../../common/auth/errors.js';
+import { BabyProfileService } from '../baby-profile/service.js';
 import { shareSchema } from './schema.js';
 import { SharingService } from './service.js';
 
-// deps.service lets one buildServer() call thread a single instance to
-// domains that need cross-domain reads (Privacy account export) without
-// reaching into this domain's repository directly (Constitution 0.A #3).
 export async function sharingRoutes(
   app: FastifyInstance,
-  deps: { service?: SharingService } = {},
+  deps: { service: SharingService; babyProfileService: BabyProfileService },
 ) {
-  const service =
-    deps.service ?? new SharingService(new InMemoryShareRepository(), auditService);
-
-  app.get('/v1/babies/:babyId/shares', async (request) => {
+  const service = deps.service;
+  // Managing collaborators is owner-only — a write grant lets someone log
+  // care events, not invite/revoke other collaborators.
+  const requireOwner = async (request: FastifyRequest) => {
     const { babyId } = request.params as { babyId: string };
-    return service.list(babyId);
-  });
+    const baby = await deps.babyProfileService.get(babyId);
+    if (!baby) throw new NotFoundError('Baby not found');
+    if (baby.userId !== request.userId) throw new ForbiddenError();
+  };
 
-  app.post('/v1/babies/:babyId/shares', async (request, reply) => {
+  app.get(
+    '/v1/babies/:babyId/shares',
+    { preHandler: requireBabyAccess({ babyProfile: deps.babyProfileService, sharing: service }, 'read') },
+    async (request) => {
+      const { babyId } = request.params as { babyId: string };
+      return service.list(babyId);
+    },
+  );
+
+  app.post('/v1/babies/:babyId/shares', { preHandler: requireOwner }, async (request, reply) => {
     const { babyId } = request.params as { babyId: string };
     const input = shareSchema.parse(request.body);
-    const grant = await service.create(babyId, input);
+    const grant = await service.create(request.userId, babyId, input);
     reply.status(201);
     return grant;
   });
 
-  app.delete('/v1/babies/:babyId/shares/:id', async (request) => {
+  app.delete('/v1/babies/:babyId/shares/:id', { preHandler: requireOwner }, async (request) => {
     const { babyId, id } = request.params as { babyId: string; id: string };
-    return service.revoke(babyId, id);
+    return service.revoke(request.userId, babyId, id);
   });
 }

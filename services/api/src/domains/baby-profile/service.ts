@@ -1,23 +1,25 @@
 import { randomUUID } from 'node:crypto';
-import { StoredBaby } from './repository.js';
+import { NotFoundError } from '../../common/auth/errors.js';
+import { BabyRepository, StoredBaby } from './repository.js';
+
 export class BabyProfileService {
-  private babies = new Map<string, StoredBaby>();
+  constructor(private repository: BabyRepository) {}
+
   async list(userId: string) {
-    return [...this.babies.values()].filter((b) => b.userId === userId);
+    return this.repository.list(userId);
   }
+
   async create(userId: string, payload: Omit<StoredBaby, 'id' | 'userId'>) {
-    const baby = { ...payload, id: randomUUID(), userId };
-    this.babies.set(baby.id, baby);
-    return baby;
+    return this.repository.create({ ...payload, id: randomUUID(), userId });
   }
+
   async update(id: string, patch: Partial<StoredBaby>) {
-    const existing = this.babies.get(id);
-    if (!existing) throw new Error('Baby not found');
-    const baby = { ...existing, ...patch };
-    this.babies.set(id, baby);
-    return baby;
+    const existing = await this.repository.get(id);
+    if (!existing) throw new NotFoundError('Baby not found');
+    return this.repository.update(id, patch);
   }
+
   async get(id: string) {
-    return this.babies.get(id);
+    return this.repository.get(id);
   }
 }

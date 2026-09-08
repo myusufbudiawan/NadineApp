@@ -1,12 +1,11 @@
 import { FastifyInstance } from 'fastify';
-import { InMemoryContentRepository } from './repository.js';
 import { seedPlaceholderTips } from './seed.js';
 import { tipCategories, tipSchema, TipCategory } from './schema.js';
 import { ContentService } from './service.js';
 
-export async function contentRoutes(app: FastifyInstance) {
-  const contentService = new ContentService(new InMemoryContentRepository());
-  await seedPlaceholderTips(contentService);
+export async function contentRoutes(app: FastifyInstance, deps: { service: ContentService }) {
+  const contentService = deps.service;
+  if ((await contentService.count()) === 0) await seedPlaceholderTips(contentService);
 
   app.get('/v1/tips', async (request) => {
     const { category, correctedAgeDays } = request.query as {
