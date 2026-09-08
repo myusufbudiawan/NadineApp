@@ -3,7 +3,8 @@
   "compilerOptions": {
     "strict": true,
     "paths": { "@/*": ["./*"] },
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }
