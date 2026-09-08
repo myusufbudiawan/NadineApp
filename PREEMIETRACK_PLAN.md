@@ -621,15 +621,32 @@ Each `domains/<name>/` folder contains its own `routes.ts`, `service.ts` (busine
 
 **5.1 Offline-first sync (FR-017)**
 
-- [ ] Local-first writes: UI never blocks on network.
-- [ ] Client-generated UUID per mutation.
-- [ ] Mutation queue with createdAt/updatedAt/sync state.
-- [ ] Exponential backoff retry.
-- [ ] Server-side idempotency on mutation UUID/idempotency key.
-- [ ] Explicit conflict resolution UX for conflicting edits (no silent overwrite).
-- [ ] Tombstone-based deletes for reliable multi-device sync.
-- [ ] `/v1/sync` (POST) endpoint implementing the above.
-- _Acceptance:_ QA scenario: log feeding offline, restart app, reconnect → exactly one server-side event created. Edit same event from two devices → conflict surfaced, not silently overwritten.
+- [x] Local-first writes: UI never blocks on network. — Unchanged from Phase 1: every Add-X screen writes to SQLite first (`features/care-events/storage.ts`), then queues a mutation.
+- [x] Client-generated UUID per mutation. — `queueMutation` already keyed each row by a fresh `Crypto.randomUUID()` (Phase 1); unchanged.
+- [x] Mutation queue with createdAt/updatedAt/sync state. — Extended `mutation_queue` (`lib/offline/database.ts`) with `attempts`, `next_attempt_at`, `last_error` so retry state persists across app restarts.
+- [x] Exponential backoff retry. — `lib/offline/sync.ts#backoffFor`: 5s base, doubling, capped at 5 min; a failed mutation stays `pending` but ineligible for `listPendingMutations()` until its `next_attempt_at` elapses.
+- [x] Server-side idempotency on mutation UUID/idempotency key. — New `services/api/src/domains/sync` domain: `SyncRepository` caches the result per client-generated mutation id, so a resubmitted batch (dropped response, app killed mid-sync) returns `'duplicate'` instead of reapplying. Care-event creation was already idempotent on `idempotencyKey` (Phase 1); update/delete mutations now get the same guarantee at the sync layer.
+- [x] Explicit conflict resolution UX for conflicting edits (no silent overwrite). — `CareEventsService.update` now takes an optional `expectedUpdatedAt` and throws `ConflictError` (carrying the server's current record) when it doesn't match (`services/api/src/domains/care-events/service.ts`). The sync engine turns that into a `'conflict'` result and stores it client-side (`sync_conflicts` table) instead of applying it; `app/more/sync-conflicts.tsx` (linked from More) lets the caregiver pick "Keep mine" (re-queues the local edit against the server's latest version) or "Use theirs" (adopts the server copy). Verified server-side by `services/api/test/sync.test.ts` ("surfaces a conflict instead of silently overwriting a concurrent edit from another device" — asserts Device A's edit survives untouched).
+- [x] Tombstone-based deletes for reliable multi-device sync. — Already soft-delete (`deletedAt`) since Phase 1; `sync.test.ts` additionally confirms a delete mutation is safe to resubmit (`'duplicate'` on retry, no resurrection).
+- [x] `/v1/sync` (POST) endpoint implementing the above. — `services/api/src/domains/sync/{schema,repository,service,routes}.ts`, wired into `server.ts` sharing the same `CareEventsService` instance as `/v1/babies/{id}/events` (Constitution 0.A #3). Scoped to care-event mutations only (create/update/delete) — growth measurements and reminders are still local-only on the client (same not-yet-reconciled gap already flagged at 2.2/3.2) and are not part of this sync batch shape yet.
+- [x] Also fixed in this pass: mobile care-event `data` fields used capitalized display enums (`'Bottle'`, `'Oral'`, `'Wet'`) that would have failed the backend's lowercase schema on first real sync attempt — `features/care-events/serverPayload.ts` translates at the sync-payload boundary only, local SQLite/display values are untouched.
+- _Acceptance:_ Covered by `services/api/test/sync.test.ts` (5 passing: apply-once, retry-is-a-duplicate, conflict-not-overwrite, invalid-mutation-shape rejected, delete-is-idempotent). **Gap flagged:** this is server-side + unit-level verification only — the full on-device QA scenario (log feeding offline in the actual app, kill/restart, reconnect, confirm exactly one server event; resolve a real two-device conflict through the `sync-conflicts` screen) has **not been click-verified**, consistent with every other Phase 2–4 gap already recorded for the same reason (`expo-sqlite` doesn't run in this session's web preview). `useSync()` (`hooks/useSync.ts`) is mounted at the root layout so this now runs automatically on launch/foreground/interval — needs an iOS/Android run to confirm the permission-less background behavior end-to-end.
+
+**5.2 Security & compliance (Section 11) — partial**
+
+- [x] PII/baby data excluded from analytics, logs, crash reports by default — automated log-scrubbing check. — `buildServer()` (`services/api/src/server.ts`) now sets explicit Fastify logger `redact`/`serializers` so request logs never carry a body, and `services/api/test/log-scrubbing.test.ts` boots the real server, sends a temperature/medication event with canary values, and asserts none of them appear anywhere in the captured log stream. `services/api/src/common/analytics/events.ts` adds a closed, `.strict()` allowlist of analytics event shapes (screen viewed, event-type-logged-by-category-only, etc.) — `trackEvent()` throws on anything outside it, verified by `services/api/test/analytics.test.ts` (rejects raw weight values, notes, and medication dose). Nothing in the app calls `trackEvent` yet (no analytics destination is wired up) — this is the chokepoint ready for when one is.
+- [ ] TLS everywhere, encrypted local storage, no plaintext secrets, least-privilege server-side authorization, jurisdiction-matched deletion, formal legal/compliance assessment. — **Not done.** All of these are blocked upstream on Phase 0.3 (auth/session management is still an unstarted stub) — there is no actor identity on any request yet for "least-privilege authorization" to check, and no secret-storage path exists to audit. Flagging rather than faking: implementing these now would mean architecting around an auth system that doesn't exist. `SharingService.hasActiveAccess()` (4.1) remains the authorization check every baby-scoped route should call once Phase 0.3 lands.
+
+**5.3 Accessibility audit — not started.** No screen/interaction changes were made in this pass; the existing per-screen a11y notes from Phases 0–4 (dynamic type, contrast, chart text-alternative) stand as previously recorded. Full audit needs an on-device screen-reader pass, which is out of scope here (SQL/UI not exercisable in this session).
+
+**5.4 Analytics correctness (Section 15)**
+
+- [x] Implement allowed events only + explicit block on raw measurement values. — Covered above under 5.2 (`common/analytics/events.ts` + `analytics.test.ts`); listing both here and at 5.2 since the same work satisfies both checklist items rather than duplicating it.
+- _Acceptance:_ `services/api/test/analytics.test.ts` (5 passing) audits the payload allowlist directly.
+
+**5.5 Error & empty states — not started this pass.** No new UI states were added; existing empty-state/offline-indicator work from Phases 1–4 stands as previously recorded. Explicit sync-pending/sync-failed/retry UI (beyond the new conflicts screen) is a reasonable next increment once 5.1 is click-verified on-device.
+
+**5.6 QA full pass / 5.7 Definition-of-Done gate — not started.** Both are inherently manual/on-device or organizational (legal/clinical sign-off) checklist items, not code — see the gaps flagged throughout 5.1/5.2/5.3 above for what's still outstanding before either can be attempted.
 
 **5.2 Security & compliance (Section 11)**
 

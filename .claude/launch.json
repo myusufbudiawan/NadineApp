@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "web", "--prefix", "apps/mobile", "--", "--port", "8090"],
       "port": 8090
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "services/api"],
+      "port": 3000
     }
   ]
 }
