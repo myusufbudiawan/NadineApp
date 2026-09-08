@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { actualAge, correctedAge, formatAge, formatAgeDetailed } from '../lib/age.ts';
+import { actualAge, correctedAge, formatAge, formatAgeDetailed } from '../lib/age';
 
 assert.deepEqual(
   actualAge(new Date('2024-02-28T10:00:00Z'), new Date('2024-03-07T10:00:00Z')),
