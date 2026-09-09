@@ -27,11 +27,11 @@ export function ScreenHeader({
           accessibilityLabel="Go back"
           onPress={() => router.back()}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <Ionicons name="arrow-back" size={22} color={colors.accent} />
         </Pressable>
       )}
       <Text
-        style={{ fontSize: type.title, fontWeight: '800', color: colors.text, flex: 1 }}
+        style={{ fontSize: type.title, fontFamily: type.fontHeading, color: colors.text, flex: 1 }}
       >
         {title}
       </Text>

@@ -21,14 +21,14 @@ export function BottomTabBar() {
       style={{
         height: 72,
         flexDirection: 'row',
-        backgroundColor: colors.white,
+        backgroundColor: colors.surface,
         borderTopWidth: 1,
-        borderColor: colors.line,
+        borderColor: colors.divider,
       }}
     >
       {tabs.map((tab) => {
         const selected = path.includes(tab.label.toLowerCase());
-        const tint = selected ? colors.pink : colors.muted;
+        const tint = selected ? colors.accentStrong : colors.faint;
         return (
           <Pressable
             key={tab.label}
@@ -43,11 +43,11 @@ export function BottomTabBar() {
               gap: 2,
             }}
           >
-            <Ionicons name={tab.icon} size={21} color={tint} />
+            <Ionicons name={tab.icon} size={19} color={tint} />
             <Text
               style={{
                 fontSize: 10,
-                fontWeight: selected ? '700' : '500',
+                fontFamily: selected ? type.fontBodyMedium : type.fontBody,
                 color: tint,
               }}
             >

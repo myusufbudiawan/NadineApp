@@ -1,6 +1,10 @@
+import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
+import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { colors } from '@/lib/design-system/tokens';
+import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
 export default function RootLayout() {
@@ -11,6 +15,14 @@ export default function RootLayout() {
   // someone is actually logged in.
   const { session } = useAuthSession();
   useSync(Boolean(session));
+  const [fontsLoaded] = useFonts({
+    CormorantGaramond_600SemiBold,
+    Lora_400Regular,
+    Lora_600SemiBold,
+  });
+  if (!fontsLoaded) {
+    return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
+  }
   return (
     <SafeAreaProvider>
       <StatusBar style="dark" />
@@ -58,6 +70,7 @@ export default function RootLayout() {
         <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
         <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
       </Stack>
+      <KeyboardDoneBar />
     </SafeAreaProvider>
   );
 }

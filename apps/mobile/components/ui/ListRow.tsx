@@ -21,17 +21,19 @@ export function ListRow({
       accessibilityLabel={`${title}${subtitle ? `, ${subtitle}` : ''}`}
       onPress={onPress}
       style={{
-        minHeight: 72,
+        minHeight: 66,
         flexDirection: 'row',
         alignItems: 'center',
         gap: space.md,
         paddingVertical: space.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.line,
       }}
     >
       <IconChip icon={icon} tone={tone} label="" />
       <View style={{ flex: 1 }}>
         <Text
-          style={{ fontSize: type.body, fontWeight: '700', color: colors.text }}
+          style={{ fontSize: type.body, fontFamily: type.fontBodyMedium, color: colors.text }}
         >
           {title}
         </Text>
@@ -39,15 +41,16 @@ export function ListRow({
           <Text
             style={{
               marginTop: 3,
-              color: colors.muted,
+              color: colors.faint,
               fontSize: type.caption,
+              fontFamily: type.fontBody,
             }}
           >
             {subtitle}
           </Text>
         )}
       </View>
-      <Ionicons name="chevron-forward" color={colors.muted} size={19} />
+      <Ionicons name="chevron-forward" color={colors.accent} size={17} />
     </Pressable>
   );
 }

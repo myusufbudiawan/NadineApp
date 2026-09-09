@@ -44,7 +44,7 @@ export default function CareEventHistory() {
             <Text
               style={{
                 fontSize: typeScale.caption,
-                fontWeight: '700',
+                fontFamily: typeScale.fontBodyMedium,
                 color: colors.muted,
                 textTransform: 'uppercase',
                 letterSpacing: 0.5,
@@ -72,7 +72,7 @@ export default function CareEventHistory() {
                     accessibilityLabel={`Edit ${config.title.toLowerCase()} entry from ${formatTime(event.occurredAt)}`}
                     onPress={() => router.push(`${config.route}?id=${event.id}` as never)}
                   >
-                    <Text style={{ fontSize: typeScale.body, fontWeight: '700', color: colors.text }}>
+                    <Text style={{ fontSize: typeScale.body, fontFamily: typeScale.fontBodyMedium, color: colors.text }}>
                       {config.format(event)}
                     </Text>
                     {event.notes ? (

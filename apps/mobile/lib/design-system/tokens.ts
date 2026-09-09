@@ -1,42 +1,61 @@
-import { Platform } from 'react-native';
-
+// "Classical" editorial theme — Cormorant Garamond headings over Lora body,
+// a warm near-white ground, and a single gold accent applied as stroke/text
+// rather than fill. See the imported Claude Design system for the full spec.
 export const colors = {
-  canvas: '#FFFFFF',
-  text: '#25242B',
-  muted: '#7D7B84',
-  line: '#EEEAF0',
-  pink: '#FF6D8D',
-  pinkSoft: '#FFF0F3',
-  violet: '#9B6BD2',
-  violetSoft: '#F1E9FB',
-  blue: '#31BFC8',
-  blueSoft: '#E6F8F9',
-  yellow: '#FFB52E',
-  yellowSoft: '#FFF6DF',
-  orange: '#FF835D',
-  orangeSoft: '#FFF0EA',
-  green: '#25AF83',
-  greenSoft: '#E8F8F2',
-  graySoft: '#F6F6F8',
-  white: '#FFFFFF',
-  danger: '#C5354F',
+  canvas: '#f3f2f2',
+  surface: '#faf8f6',
+  text: '#201f1d',
+  muted: '#7d7979',
+  faint: '#9b9797',
+  line: '#eae7e7',
+  divider: 'rgba(32,31,29,0.16)',
+  accent: '#b68235',
+  accentStrong: '#a06f24',
+  accentDeep: '#7d5411',
+  accentSoft: '#fff3e4',
+  ring: 'rgba(32,31,29,0.35)',
+  // Legacy tone names kept so existing call sites (`tone="pink"`, etc.) keep
+  // compiling — the design system is deliberately monochrome, so every tone
+  // now resolves to the same gold accent rather than a distinct hue.
+  pink: '#a06f24',
+  pinkSoft: '#fff3e4',
+  violet: '#a06f24',
+  violetSoft: '#fff3e4',
+  blue: '#a06f24',
+  blueSoft: '#fff3e4',
+  yellow: '#a06f24',
+  yellowSoft: '#fff3e4',
+  orange: '#a06f24',
+  orangeSoft: '#fff3e4',
+  green: '#a06f24',
+  greenSoft: '#fff3e4',
+  graySoft: '#f8f4f4',
+  white: '#faf8f6',
+  danger: '#9e3526',
 } as const;
-export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
-export const radius = { sm: 10, md: 16, lg: 22, pill: 999 } as const;
+// Screen background gradient — the design tints the whole app subtly by the
+// baby's sex (a soft blush or a soft blue) fading into the same warm ground.
+export const screenGradient = {
+  girl: ['#fbe6e0', '#f9f0ec', '#faf8f6'] as const,
+  boy: ['#e2ecf6', '#f6f2ee', '#faf8f6'] as const,
+  locations: [0, 0.32, 0.6] as const,
+};
+export const space = { xs: 5, sm: 9, md: 14, lg: 18, xl: 28, xxl: 37 } as const;
+export const radius = { sm: 2, md: 4, lg: 7, pill: 999 } as const;
 export const type = {
-  body: 16,
-  caption: 13,
+  body: 15,
+  caption: 12,
   label: 14,
-  title: 24,
-  display: 30,
-  font: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  title: 26,
+  display: 32,
+  fontHeading: 'CormorantGaramond_600SemiBold',
+  fontBody: 'Lora_400Regular',
+  fontBodyMedium: 'Lora_600SemiBold',
 } as const;
-export const shadow = Platform.select({
-  ios: {
-    shadowColor: '#372738',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  android: { elevation: 2 },
-})!;
+export const shadow = {
+  shadowColor: '#2d2b2b',
+  shadowOpacity: 0.14,
+  shadowRadius: 2,
+  shadowOffset: { width: 0, height: 1 },
+  elevation: 1,
+} as const;

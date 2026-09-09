@@ -20,15 +20,15 @@ export function MetricCard({
     <Card style={{ flex: 1, padding: 12, minHeight: 96 }}>
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
         <IconChip icon={icon} tone={tone} size={34} label="" />
-        <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>
+        <Text style={{ fontSize: 18, fontFamily: type.fontHeading, color: colors.text }}>
           {value}
           {unit && (
-            <Text style={{ fontSize: 11, fontWeight: '500' }}> {unit}</Text>
+            <Text style={{ fontSize: 11, fontFamily: type.fontBody }}> {unit}</Text>
           )}
         </Text>
       </View>
       <Text
-        style={{ marginTop: 10, fontSize: type.caption, color: colors.muted }}
+        style={{ marginTop: 10, fontSize: type.caption, color: colors.muted, fontFamily: type.fontBody }}
       >
         {caption}
       </Text>

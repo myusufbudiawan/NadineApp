@@ -16,30 +16,36 @@ export function Button({
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }) {
-  const bg =
-    variant === 'destructive' ? colors.danger : variant === 'secondary' ? colors.violetSoft : colors.violet;
-  const fg = variant === 'secondary' ? colors.violet : colors.white;
+  const borderColor =
+    variant === 'destructive' ? colors.danger : variant === 'secondary' ? colors.divider : colors.accent;
+  const fg = variant === 'destructive' ? colors.danger : colors.accent;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         {
-          minHeight: 52,
+          minHeight: 44,
           paddingHorizontal: space.lg,
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: radius.sm,
-          backgroundColor: disabled ? colors.line : bg,
+          borderRadius: radius.md,
+          borderWidth: 1,
+          borderColor: disabled ? colors.line : borderColor,
+          backgroundColor: pressed && !disabled ? colors.accentSoft : 'transparent',
         },
         style,
       ]}
     >
       <Text
         allowFontScaling
-        style={{ color: disabled ? colors.muted : fg, fontSize: type.body, fontWeight: '700' }}
+        style={{
+          color: disabled ? colors.faint : fg,
+          fontFamily: type.fontHeading,
+          fontSize: type.body,
+        }}
       >
         {children}
       </Text>

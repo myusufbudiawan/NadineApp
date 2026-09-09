@@ -35,7 +35,7 @@ export default function Reminders() {
           <Text
             accessibilityRole="button"
             onPress={() => router.push('/more/add-reminder')}
-            style={{ color: colors.violet, fontWeight: '700', fontSize: type.body }}
+            style={{ color: colors.violet, fontFamily: type.fontBodyMedium, fontSize: type.body }}
           >
             + Add
           </Text>

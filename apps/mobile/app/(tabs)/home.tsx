@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TabScreen } from '@/components/ui/Screen';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
+import { pushBabyProfile } from '@/features/baby-profile/pushToServer';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { computeTodaySummary, TodaySummary } from '@/features/care-events/todaySummary';
@@ -60,6 +61,9 @@ export default function Home() {
     const next: BabyProfile = { ...profile, photoUri: result.assets[0].uri };
     await saveProfile(next.id, JSON.stringify(next));
     setProfile(next);
+    pushBabyProfile(next).catch((err) => {
+      console.warn('baby photo: server sync failed, queued for retry', err);
+    });
   };
 
   if (loaded && !profile) {
@@ -77,7 +81,7 @@ export default function Home() {
               Good morning,
             </Text>
             <Text
-              style={{ color: colors.text, fontSize: type.title, fontWeight: '800' }}
+              style={{ color: colors.text, fontSize: type.title, fontFamily: type.fontHeading }}
             >
               Mama <Text style={{ color: colors.pink }}>♥</Text>
             </Text>
@@ -94,7 +98,7 @@ export default function Home() {
           <Text
             style={{
               fontSize: type.label,
-              fontWeight: '800',
+              fontFamily: type.fontHeading,
               color: colors.text,
               textAlign: 'center',
             }}
@@ -164,7 +168,7 @@ export default function Home() {
             style={{
               color: colors.text,
               fontSize: type.title,
-              fontWeight: '800',
+              fontFamily: type.fontHeading,
             }}
           >
             Mama
@@ -186,7 +190,7 @@ export default function Home() {
         onPressPhoto={pickPhoto}
       />
       <Text
-        style={{ fontSize: type.label, fontWeight: '800', color: colors.text }}
+        style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}
       >
         Today at a glance
       </Text>

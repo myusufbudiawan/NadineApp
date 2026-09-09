@@ -14,8 +14,8 @@ export function EncouragementCard({
   return (
     <Card
       style={{
-        backgroundColor: colors.pinkSoft,
-        borderColor: 'transparent',
+        backgroundColor: colors.accentSoft,
+        borderColor: colors.accent,
         flexDirection: 'row',
         alignItems: 'center',
       }}
@@ -23,9 +23,10 @@ export function EncouragementCard({
       <View style={{ flex: 1 }}>
         <Text
           style={{
-            fontSize: type.label,
-            fontWeight: '800',
-            color: colors.text,
+            fontSize: 10,
+            letterSpacing: 0.8,
+            textTransform: 'uppercase',
+            color: colors.accent,
           }}
         >
           {title}
@@ -33,15 +34,16 @@ export function EncouragementCard({
         <Text
           style={{
             marginTop: 8,
-            color: colors.text,
+            color: colors.accentDeep,
             fontSize: type.label,
+            fontFamily: type.fontBody,
             lineHeight: 20,
           }}
         >
           {message}
         </Text>
       </View>
-      <Ionicons name={icon} size={46} color={colors.pink} />
+      <Ionicons name={icon} size={40} color={colors.accent} />
     </Card>
   );
 }

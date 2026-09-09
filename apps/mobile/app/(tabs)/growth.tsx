@@ -61,7 +61,7 @@ export default function Growth() {
         <ScreenHeader title="Growth" />
         <Card style={{ alignItems: 'center', gap: 8, padding: 24 }}>
           <Ionicons name="trending-up-outline" size={32} color={colors.pink} />
-          <Text style={{ fontSize: type.label, fontWeight: '800', color: colors.text, textAlign: 'center' }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text, textAlign: 'center' }}>
             Set up your baby's profile
           </Text>
           <Text style={{ color: colors.muted, textAlign: 'center' }}>
@@ -106,12 +106,13 @@ export default function Growth() {
               width: 32,
               height: 32,
               borderRadius: 16,
-              backgroundColor: colors.pinkSoft,
+              borderWidth: 1,
+              borderColor: colors.ring,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="add" size={20} color={colors.pink} />
+            <Ionicons name="add" size={18} color={colors.accent} />
           </Pressable>
         }
       />
@@ -126,7 +127,7 @@ export default function Growth() {
       {currentCorrectedAge && (
         <Text style={{ fontSize: type.label, color: colors.muted }}>
           Corrected age{' '}
-          <Text style={{ color: colors.pink, fontWeight: '800' }}>
+          <Text style={{ color: colors.pink, fontFamily: type.fontHeading }}>
             {formatAgeDetailed(currentCorrectedAge)}
           </Text>
         </Text>
@@ -145,7 +146,7 @@ export default function Growth() {
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Card style={{ flex: 1 }}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>Latest</Text>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>
+          <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text }}>
             {stats?.latest ? `${stats.latest.value} ${stats.latest.unit}` : '—'}
           </Text>
           <Text style={{ color: colors.green, fontSize: 12, marginTop: 8 }}>
@@ -156,7 +157,7 @@ export default function Growth() {
           <Text style={{ color: colors.muted, fontSize: 12 }}>
             {metric === 'weight' ? 'Birth weight' : 'Latest vs 7 days'}
           </Text>
-          <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>
+          <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text }}>
             {metric === 'weight' && birthValue ? `${birthValue.value} ${birthValue.unit}` : stats?.delta7dCaption ?? '—'}
           </Text>
           {metric === 'weight' ? (

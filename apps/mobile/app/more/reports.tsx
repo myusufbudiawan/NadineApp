@@ -79,7 +79,7 @@ export default function Reports() {
       {report && (
         <>
           <Card style={{ gap: space.sm }}>
-            <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+            <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
               {report.babyProfile.name}
             </Text>
             <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -93,7 +93,7 @@ export default function Reports() {
           </Card>
 
           <Card style={{ gap: space.sm }}>
-            <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+            <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
               Care events
             </Text>
             {report.careEventSummary.length === 0 && (
@@ -113,7 +113,7 @@ export default function Reports() {
           </Card>
 
           <Card style={{ gap: space.sm }}>
-            <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+            <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
               Measurements
             </Text>
             {report.measurements.length === 0 && (

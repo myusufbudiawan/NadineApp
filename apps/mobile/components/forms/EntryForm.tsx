@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { Platform, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
+import { NUMERIC_KEYBOARD_ACCESSORY_ID } from '@/components/ui/KeyboardDoneBar';
 import { NumericStepper } from '@/components/ui/NumericStepper';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { NotesInput } from './NotesInput';
@@ -102,7 +103,7 @@ export function EntryForm({
                   <Text
                     style={{
                       fontSize: type.label,
-                      fontWeight: '700',
+                      fontFamily: type.fontBodyMedium,
                       color: colors.text,
                       marginBottom: space.sm,
                     }}
@@ -120,7 +121,7 @@ export function EntryForm({
           case 'stepper':
             return (
               <View key={field.key}>
-                <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+                <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
                   {field.label} ({field.unit})
                 </Text>
                 <NumericStepper
@@ -141,7 +142,7 @@ export function EntryForm({
                 <Text
                   style={{
                     fontSize: type.label,
-                    fontWeight: '700',
+                    fontFamily: type.fontBodyMedium,
                     color: colors.text,
                     marginBottom: space.sm,
                   }}
@@ -153,6 +154,12 @@ export function EntryForm({
                   placeholder={field.placeholder}
                   placeholderTextColor={colors.muted}
                   keyboardType={field.keyboardType ?? 'default'}
+                  returnKeyType={field.keyboardType === 'decimal-pad' ? undefined : 'done'}
+                  inputAccessoryViewID={
+                    field.keyboardType === 'decimal-pad' && Platform.OS === 'ios'
+                      ? NUMERIC_KEYBOARD_ACCESSORY_ID
+                      : undefined
+                  }
                   value={String(values[field.key] ?? '')}
                   onChangeText={(text) => setValue(field.key, text)}
                   style={{

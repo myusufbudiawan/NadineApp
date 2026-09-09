@@ -19,7 +19,7 @@ export function NotesInput({
       <Text
         style={{
           fontSize: type.label,
-          fontWeight: '700',
+          fontFamily: type.fontBodyMedium,
           color: colors.text,
           marginBottom: space.sm,
         }}

@@ -9,6 +9,7 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { actualAge } from '@/lib/age';
+import { listBabies } from '@/lib/api/babies';
 import { colors, type } from '@/lib/design-system/tokens';
 
 const items = [
@@ -24,6 +25,7 @@ const items = [
 
 export default function More() {
   const [profile, setProfile] = useState<BabyProfile>();
+  const [hasMultipleBabies, setHasMultipleBabies] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -31,11 +33,24 @@ export default function More() {
       loadBabyProfile(LOCAL_BABY_ID).then((p) => {
         if (active) setProfile(p);
       });
+      listBabies()
+        .then((babies) => {
+          if (active) setHasMultipleBabies(babies.length > 1);
+        })
+        .catch(() => {});
       return () => {
         active = false;
       };
     }, []),
   );
+
+  const visibleItems = hasMultipleBabies
+    ? [
+        ...items.slice(0, 1),
+        { title: 'Switch Baby', icon: 'swap-horizontal-outline' as const, route: '/select-baby' },
+        ...items.slice(1),
+      ]
+    : items;
 
   const initial = profile?.name?.trim()?.[0]?.toUpperCase() ?? '?';
   const bornSummary = profile
@@ -65,7 +80,7 @@ export default function More() {
             width: 54,
             height: 54,
             borderRadius: 27,
-            backgroundColor: colors.pink,
+            backgroundColor: colors.line,
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
@@ -78,13 +93,13 @@ export default function More() {
               accessibilityLabel={`${profile.name || 'Baby'}'s photo`}
             />
           ) : (
-            <Text style={{ color: colors.white, fontSize: 23 }}>{initial}</Text>
+            <Text style={{ color: colors.accentStrong, fontFamily: type.fontHeading, fontSize: 23 }}>{initial}</Text>
           )}
         </View>
         <View style={{ flex: 1 }}>
           <Text
             style={{
-              fontWeight: '800',
+              fontFamily: type.fontHeading,
               fontSize: type.body,
               color: colors.text,
             }}
@@ -107,7 +122,7 @@ export default function More() {
           )}
         </View>
       </Card>
-      {items.map((item) => (
+      {visibleItems.map((item) => (
         <ListRow
           key={item.title}
           icon={item.icon}

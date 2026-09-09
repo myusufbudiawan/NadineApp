@@ -53,11 +53,11 @@ export default function SyncConflicts() {
       )}
       {conflicts.map((conflict) => (
         <Card key={conflict.id} style={{ gap: space.md }}>
-          <Text style={{ fontWeight: '700', fontSize: type.body, color: colors.text }}>
+          <Text style={{ fontFamily: type.fontBodyMedium, fontSize: type.body, color: colors.text }}>
             This entry was also edited on another device
           </Text>
           <View style={{ gap: 4 }}>
-            <Text style={{ color: colors.muted, fontSize: type.caption, fontWeight: '700' }}>
+            <Text style={{ color: colors.muted, fontSize: type.caption, fontFamily: type.fontBodyMedium }}>
               Your version (this device)
             </Text>
             <Text style={{ color: colors.text, fontSize: type.caption }}>
@@ -65,7 +65,7 @@ export default function SyncConflicts() {
             </Text>
           </View>
           <View style={{ gap: 4 }}>
-            <Text style={{ color: colors.muted, fontSize: type.caption, fontWeight: '700' }}>
+            <Text style={{ color: colors.muted, fontSize: type.caption, fontFamily: type.fontBodyMedium }}>
               Server version (other device)
             </Text>
             <Text style={{ color: colors.text, fontSize: type.caption }}>

@@ -23,7 +23,7 @@ export function WeekdayToggle({
   return (
     <View>
       <Text
-        style={{ fontSize: type.label, fontWeight: '700', color: colors.text, marginBottom: space.sm }}
+        style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text, marginBottom: space.sm }}
       >
         {label}
       </Text>
@@ -49,7 +49,7 @@ export function WeekdayToggle({
               <Text
                 style={{
                   fontSize: type.caption,
-                  fontWeight: '700',
+                  fontFamily: type.fontBodyMedium,
                   color: active ? colors.white : colors.muted,
                 }}
               >

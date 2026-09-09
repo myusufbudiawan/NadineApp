@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { PanResponder, Pressable, Text, TextInput, View } from 'react-native';
+import { PanResponder, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { NUMERIC_KEYBOARD_ACCESSORY_ID } from './KeyboardDoneBar';
 import { colors, type } from '@/lib/design-system/tokens';
 
 function decimalsForStep(step: number) {
@@ -106,13 +107,14 @@ export function NumericStepper({
             autoFocus
             selectTextOnFocus
             keyboardType="decimal-pad"
+            inputAccessoryViewID={Platform.OS === 'ios' ? NUMERIC_KEYBOARD_ACCESSORY_ID : undefined}
             value={draft}
             onChangeText={setDraft}
             onBlur={commitEditing}
             onSubmitEditing={commitEditing}
             style={{
-              color: colors.violet,
-              fontWeight: '700',
+              color: colors.accent,
+              fontFamily: type.fontHeading,
               fontSize: 43,
               minWidth: 100,
               textAlign: 'center',
@@ -126,7 +128,7 @@ export function NumericStepper({
             {...panResponder.panHandlers}
           >
             <Text
-              style={{ color: colors.violet, fontWeight: '700', fontSize: 43 }}
+              style={{ color: colors.accent, fontFamily: type.fontHeading, fontSize: 43 }}
             >
               {value.toFixed(decimals)}
             </Text>
@@ -154,7 +156,7 @@ export function NumericStepper({
               height: i % 5 === 0 ? 18 : 10,
               borderLeftWidth: 1,
               borderColor:
-                Math.round(value) === i + rangeMin ? colors.violet : colors.line,
+                Math.round(value) === i + rangeMin ? colors.accent : colors.line,
             }}
           />
         ))}

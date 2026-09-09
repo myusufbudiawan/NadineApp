@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react';
 import { StyleProp, View, ViewStyle } from 'react-native';
-import { colors, radius, shadow, space } from '@/lib/design-system/tokens';
+import { colors, radius, space } from '@/lib/design-system/tokens';
 
 export function Card({
   children,
@@ -15,12 +15,11 @@ export function Card({
       accessibilityLabel={accessibilityLabel}
       style={[
         {
-          backgroundColor: colors.white,
+          backgroundColor: colors.surface,
           borderRadius: radius.md,
           padding: space.lg,
           borderWidth: 1,
-          borderColor: colors.line,
-          ...shadow,
+          borderColor: colors.divider,
         },
         style,
       ]}

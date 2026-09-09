@@ -57,7 +57,7 @@ export default function Settings() {
       <ScreenHeader title="Settings" back />
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Account
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -81,7 +81,7 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Baby profile
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -95,12 +95,12 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Notifications
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, paddingRight: space.sm }}>
-            <Text style={{ color: colors.text, fontSize: type.caption, fontWeight: '600' }}>
+            <Text style={{ color: colors.text, fontSize: type.caption, fontFamily: type.fontBodyMedium }}>
               Reminder alerts
             </Text>
             <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -150,7 +150,7 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Your data
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -182,7 +182,7 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Account deletion
         </Text>
         {pendingDeletion ? (
@@ -239,7 +239,7 @@ export default function Settings() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           About
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>

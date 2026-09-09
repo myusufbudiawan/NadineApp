@@ -35,7 +35,7 @@ export default function Onboarding() {
       }}
     >
       <View>
-        <Text style={{ fontSize: 36, fontWeight: '800', color: colors.text }}>
+        <Text style={{ fontSize: 36, fontFamily: type.fontHeading, color: colors.text }}>
           Preemie<Text style={{ color: colors.pink }}>Track</Text>
         </Text>
         <Text
@@ -58,16 +58,17 @@ export default function Onboarding() {
               width: 56,
               height: 56,
               borderRadius: 28,
-              backgroundColor: colors.pinkSoft,
+              borderWidth: 1,
+              borderColor: colors.ring,
               justifyContent: 'center',
               alignItems: 'center',
             }}
           >
-            <Ionicons name={item.icon} size={28} color={colors.pink} />
+            <Ionicons name={item.icon} size={26} color={colors.text} />
           </View>
           <View style={{ flex: 1 }}>
             <Text
-              style={{ fontSize: 18, fontWeight: '800', color: colors.text }}
+              style={{ fontSize: 18, fontFamily: type.fontHeading, color: colors.text }}
             >
               {item.title}
             </Text>
@@ -84,10 +85,10 @@ export default function Onboarding() {
         </View>
       ))}
       <Card
-        style={{ backgroundColor: colors.pinkSoft, borderColor: 'transparent' }}
+        style={{ backgroundColor: colors.accentSoft, borderColor: colors.accent }}
       >
         <Text
-          style={{ fontSize: type.body, fontWeight: '800', color: colors.text }}
+          style={{ fontSize: type.body, fontFamily: type.fontHeading, color: colors.text }}
         >
           Your baby’s data is private
         </Text>
@@ -111,7 +112,7 @@ export default function Onboarding() {
           textAlign: 'center',
           color: colors.violet,
           fontSize: type.label,
-          fontWeight: '700',
+          fontFamily: type.fontBodyMedium,
         }}
       >
         I already have an account

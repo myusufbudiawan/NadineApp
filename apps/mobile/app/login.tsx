@@ -77,7 +77,7 @@ export default function Login() {
       }}
     >
       <View>
-        <Text style={{ fontSize: type.title, fontWeight: '800', color: colors.text }}>
+        <Text style={{ fontSize: type.title, fontFamily: type.fontHeading, color: colors.text }}>
           {mode === 'signin' ? 'Welcome back' : 'Create your account'}
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.body, marginTop: space.sm }}>
@@ -129,7 +129,7 @@ export default function Login() {
       <Text
         accessibilityRole="link"
         onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-        style={{ textAlign: 'center', color: colors.violet, fontSize: type.label, fontWeight: '700' }}
+        style={{ textAlign: 'center', color: colors.violet, fontSize: type.label, fontFamily: type.fontBodyMedium }}
       >
         {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
       </Text>

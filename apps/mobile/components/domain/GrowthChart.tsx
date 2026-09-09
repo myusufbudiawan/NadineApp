@@ -82,7 +82,7 @@ export function GrowthChart({
         accessibilityLabel={emptyMessage}
         style={{
           height: height + 65,
-          borderRadius: 12,
+          borderRadius: 4,
           borderWidth: 1,
           borderColor: colors.line,
           alignItems: 'center',

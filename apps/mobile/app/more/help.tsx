@@ -49,7 +49,7 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
         style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
       >
         <Text
-          style={{ flex: 1, fontSize: type.label, fontWeight: '700', color: colors.text }}
+          style={{ flex: 1, fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}
         >
           {question}
         </Text>
@@ -70,7 +70,7 @@ export default function Help() {
       <ScreenHeader title="Help & Support" back />
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Contact us
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -92,7 +92,7 @@ export default function Help() {
         </Button>
       </Card>
 
-      <Text style={{ fontSize: type.label, fontWeight: '800', color: colors.text }}>
+      <Text style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}>
         Frequently asked questions
       </Text>
       {faqs.map((faq) => (

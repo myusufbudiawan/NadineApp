@@ -24,7 +24,7 @@ export default function About() {
         >
           <Ionicons name="heart" size={30} color={colors.pink} />
         </View>
-        <Text style={{ fontSize: type.title, fontWeight: '800', color: colors.text }}>
+        <Text style={{ fontSize: type.title, fontFamily: type.fontHeading, color: colors.text }}>
           {appConfig.expo.name}
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>
@@ -33,7 +33,7 @@ export default function About() {
       </View>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Our mission
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption, lineHeight: 19 }}>
@@ -44,7 +44,7 @@ export default function About() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           A note on medical advice
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption, lineHeight: 19 }}>
@@ -55,7 +55,7 @@ export default function About() {
       </Card>
 
       <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Legal
         </Text>
         <Text style={{ color: colors.muted, fontSize: type.caption }}>

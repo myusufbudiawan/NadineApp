@@ -1,25 +1,24 @@
 import { Pressable, Text, View } from 'react-native';
-import { colors, radius, space, type } from '@/lib/design-system/tokens';
+import { colors, radius, type } from '@/lib/design-system/tokens';
 export function SegmentedControl({
   options,
   value,
   onChange,
-  tone = 'violet',
 }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
   tone?: 'violet' | 'pink';
 }) {
-  const active = tone === 'pink' ? colors.pink : colors.violet;
   return (
     <View
       accessibilityRole="tablist"
       style={{
         flexDirection: 'row',
-        padding: 3,
-        backgroundColor: colors.graySoft,
-        borderRadius: radius.sm,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        borderRadius: radius.md,
+        overflow: 'hidden',
       }}
     >
       {options.map((option) => (
@@ -30,18 +29,17 @@ export function SegmentedControl({
           onPress={() => onChange(option)}
           style={{
             flex: 1,
-            minHeight: 42,
-            borderRadius: radius.sm - 2,
+            minHeight: 38,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: option === value ? active : 'transparent',
+            backgroundColor: option === value ? colors.accentStrong : 'transparent',
           }}
         >
           <Text
             style={{
               fontSize: type.label,
-              fontWeight: '600',
-              color: option === value ? colors.white : colors.muted,
+              fontFamily: type.fontBodyMedium,
+              color: option === value ? colors.surface : colors.muted,
             }}
           >
             {option}

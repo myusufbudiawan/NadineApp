@@ -33,20 +33,20 @@ export default function Tips() {
     <TabScreen>
       <ScreenHeader title="Tips" />
       <Text
-        style={{ fontSize: type.label, fontWeight: '800', color: colors.text }}
+        style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}
       >
         For you today
       </Text>
       <Card
         style={{
-          backgroundColor: colors.pinkSoft,
-          borderColor: 'transparent',
+          backgroundColor: colors.accentSoft,
+          borderColor: colors.accent,
           minHeight: 190,
           overflow: 'hidden',
         }}
       >
         <View style={{ flex: 1, justifyContent: 'center', paddingRight: 96 }}>
-          <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>
+          <Text style={{ fontSize: 19, fontFamily: type.fontHeading, color: colors.text }}>
             Kangaroo Care
           </Text>
           <Text style={{ color: colors.muted, lineHeight: 20, marginTop: 8 }}>
@@ -61,7 +61,7 @@ export default function Tips() {
         />
       </Card>
       <Text
-        style={{ fontSize: type.label, fontWeight: '800', color: colors.text }}
+        style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}
       >
         All topics
       </Text>
