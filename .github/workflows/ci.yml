@@ -34,7 +34,7 @@ jobs:
         run: |
           psql "$DATABASE_URL" -c "CREATE ROLE service_role;"
           psql "$DATABASE_URL" -c "CREATE SCHEMA IF NOT EXISTS auth; CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT, raw_user_meta_data JSONB);"
-          psql "$DATABASE_URL" -f services/api/src/common/db/migrations/001_initial.sql
+          for f in services/api/src/common/db/migrations/*.sql; do psql "$DATABASE_URL" -f "$f"; done
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test
