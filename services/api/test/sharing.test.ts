@@ -111,4 +111,34 @@ describe('sharing', () => {
     });
     expect(inviteAnother.statusCode).toBe(403);
   });
+
+  it('a grantee sees the shared baby in their own baby list, even alongside one they own', async () => {
+    const dad = testUser('dad@example.com');
+    // Dad already has his own baby from his own onboarding.
+    await createTestBaby(app, dad.authHeader);
+
+    const grant = await app.inject({
+      method: 'POST',
+      url: `/v1/babies/${babyId}/shares`,
+      headers,
+      payload: { recipientEmail: dad.email, permission: 'write' },
+    });
+
+    const list = await app.inject({ method: 'GET', url: '/v1/babies', headers: dad.authHeader });
+    const babies = list.json();
+    expect(babies).toHaveLength(2);
+    const shared = babies.find((b: { id: string }) => b.id === babyId);
+    expect(shared).toMatchObject({ isOwner: false, permission: 'write' });
+    const owned = babies.find((b: { id: string }) => b.id !== babyId);
+    expect(owned).toMatchObject({ isOwner: true });
+
+    // Revoking the grant removes it from the grantee's list immediately.
+    await app.inject({
+      method: 'DELETE',
+      url: `/v1/babies/${babyId}/shares/${grant.json().id}`,
+      headers,
+    });
+    const after = await app.inject({ method: 'GET', url: '/v1/babies', headers: dad.authHeader });
+    expect(after.json()).toHaveLength(1);
+  });
 });

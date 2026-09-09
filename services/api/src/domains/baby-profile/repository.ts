@@ -10,6 +10,7 @@ export type StoredBaby = {
   birthLengthCm?: number;
   birthHeadCircumferenceCm?: number;
   fullTermReferenceWeeks: number;
+  photoUri?: string;
 };
 export interface BabyRepository {
   list(userId: string): Promise<StoredBaby[]>;

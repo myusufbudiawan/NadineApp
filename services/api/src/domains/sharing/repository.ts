@@ -11,6 +11,7 @@ export type StoredShareGrant = {
 
 export interface ShareRepository {
   list(babyId: string): Promise<StoredShareGrant[]>;
+  listByEmail(granteeEmail: string): Promise<StoredShareGrant[]>;
   get(id: string): Promise<StoredShareGrant | undefined>;
   create(grant: StoredShareGrant): Promise<StoredShareGrant>;
   update(grant: StoredShareGrant): Promise<StoredShareGrant>;
@@ -21,6 +22,10 @@ export class InMemoryShareRepository implements ShareRepository {
 
   async list(babyId: string) {
     return [...this.grants.values()].filter((g) => g.babyId === babyId);
+  }
+
+  async listByEmail(granteeEmail: string) {
+    return [...this.grants.values()].filter((g) => g.granteeEmail === granteeEmail);
   }
 
   async get(id: string) {

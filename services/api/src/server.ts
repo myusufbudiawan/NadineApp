@@ -94,7 +94,9 @@ export function buildServer(
       sharingService,
     }),
   );
-  app.register((instance) => babyProfileRoutes(instance, { service: babyProfileService }));
+  app.register((instance) =>
+    babyProfileRoutes(instance, { service: babyProfileService, sharingService }),
+  );
   app.register((instance) =>
     careEventsRoutes(instance, { service: careEventsService, babyProfileService, sharingService }),
   );

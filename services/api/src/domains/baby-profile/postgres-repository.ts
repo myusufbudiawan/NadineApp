@@ -15,8 +15,8 @@ export class PostgresBabyRepository implements BabyRepository {
   async create(baby: StoredBaby) {
     await this.db.query(
       `INSERT INTO babies (id, user_id, name, sex, date_of_birth, gestational_weeks, gestational_days,
-         birth_weight_kg, birth_length_cm, birth_head_circumference_cm, full_term_reference_weeks)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+         birth_weight_kg, birth_length_cm, birth_head_circumference_cm, full_term_reference_weeks, photo_uri)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
         baby.id,
         baby.userId,
@@ -29,6 +29,7 @@ export class PostgresBabyRepository implements BabyRepository {
         baby.birthLengthCm ?? null,
         baby.birthHeadCircumferenceCm ?? null,
         baby.fullTermReferenceWeeks,
+        baby.photoUri ?? null,
       ],
     );
     return baby;
@@ -41,7 +42,7 @@ export class PostgresBabyRepository implements BabyRepository {
     await this.db.query(
       `UPDATE babies SET name = $2, sex = $3, date_of_birth = $4, gestational_weeks = $5, gestational_days = $6,
          birth_weight_kg = $7, birth_length_cm = $8, birth_head_circumference_cm = $9,
-         full_term_reference_weeks = $10, updated_at = now()
+         full_term_reference_weeks = $10, photo_uri = $11, updated_at = now()
        WHERE id = $1`,
       [
         id,
@@ -54,6 +55,7 @@ export class PostgresBabyRepository implements BabyRepository {
         updated.birthLengthCm ?? null,
         updated.birthHeadCircumferenceCm ?? null,
         updated.fullTermReferenceWeeks,
+        updated.photoUri ?? null,
       ],
     );
     return updated;
@@ -81,5 +83,6 @@ function toStoredBaby(row: Record<string, unknown>): StoredBaby {
         ? undefined
         : Number(row.birth_head_circumference_cm),
     fullTermReferenceWeeks: row.full_term_reference_weeks as number,
+    photoUri: row.photo_uri === null ? undefined : (row.photo_uri as string),
   };
 }

@@ -14,6 +14,14 @@ export class SharingService {
     return this.repository.list(babyId);
   }
 
+  // Lets a grantee discover which babies were shared *to* them (by email) —
+  // the reverse of `list`, which is owner-scoped by babyId. Used to build
+  // "babies I can access" alongside owned babies (baby-profile routes.ts).
+  async listActiveForEmail(granteeEmail: string) {
+    const grants = await this.repository.listByEmail(granteeEmail);
+    return grants.filter((g) => !g.revokedAt);
+  }
+
   // Explicit consent capture: a grant exists only because this call was made
   // with the inviting caregiver's confirmation (FR-016) — no implicit sharing.
   async create(actorId: string, babyId: string, input: ShareInput) {

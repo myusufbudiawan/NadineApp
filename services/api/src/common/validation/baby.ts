@@ -9,4 +9,5 @@ export const babySchema = z.object({
   birthLengthCm: z.number().positive().optional(),
   birthHeadCircumferenceCm: z.number().positive().optional(),
   fullTermReferenceWeeks: z.number().int().min(37).max(45),
+  photoUri: z.string().optional(),
 });

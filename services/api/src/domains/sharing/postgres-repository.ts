@@ -12,6 +12,14 @@ export class PostgresShareRepository implements ShareRepository {
     return rows.map(toStoredShareGrant);
   }
 
+  async listByEmail(granteeEmail: string) {
+    const { rows } = await this.db.query(
+      `SELECT * FROM share_grants WHERE grantee_email = $1 ORDER BY created_at ASC`,
+      [granteeEmail],
+    );
+    return rows.map(toStoredShareGrant);
+  }
+
   async get(id: string) {
     const { rows } = await this.db.query(`SELECT * FROM share_grants WHERE id = $1`, [id]);
     return rows[0] ? toStoredShareGrant(rows[0]) : undefined;
