@@ -59,6 +59,12 @@ npm run build
 
 GitHub Actions runs the same checks for pushes and pull requests.
 
+## CI/CD
+
+- **CI** (`.github/workflows/ci.yml`) — lint/typecheck/test/build on every push and PR.
+- **Deploy API** (`.github/workflows/deploy-api.yml`) — deploys `services/api` to Vercel on every push to `main` that touches it, or via manual dispatch. Requires repo secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- **Build Android APK** (`.github/workflows/build-android.yml`) — manual dispatch only. Builds a debug APK with EAS and attaches it to a GitHub Release. Requires repo secret `EXPO_TOKEN`.
+
 ## Notes for contributors
 
 - Keep app route files thin: reusable UI belongs in `components/`, feature logic in `features/`, and shared platform code in `lib/`.
