@@ -12,4 +12,9 @@ export type BabyProfile = {
   birthHeadCircumferenceCm?: number;
   fullTermReferenceWeeks: number;
   photoUri?: string;
+  // Only set for a profile hydrated from select-baby.tsx (server-mediated
+  // multi-baby accounts). Profile edits are owner-only server-side (see
+  // baby-profile/routes.ts) — undefined means "this device's own baby",
+  // which is always the owner.
+  isOwner?: boolean;
 };

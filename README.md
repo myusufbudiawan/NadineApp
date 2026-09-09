@@ -63,7 +63,7 @@ GitHub Actions runs the same checks for pushes and pull requests.
 
 - **CI** (`.github/workflows/ci.yml`) — lint/typecheck/test/build on every push and PR.
 - **Deploy API** (`.github/workflows/deploy-api.yml`) — deploys `services/api` to Vercel on every push to `main` that touches it, or via manual dispatch. Requires repo secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
-- **Build Android APK** (`.github/workflows/build-android.yml`) — manual dispatch only. Builds a debug APK with EAS and attaches it to a GitHub Release. Requires repo secret `EXPO_TOKEN`.
+- **Build Android APK** (`.github/workflows/build-android.yml`) — manual dispatch only. Builds a debug APK with EAS and attaches it to a GitHub Release. Requires repo secret `EXPO_TOKEN`. The `preview` EAS build profile is tied to an EAS "preview" environment (`apps/mobile/eas.json`) — `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` must exist there (`eas env:create --environment preview` from `apps/mobile`, or via the expo.dev project dashboard) or the built app will have no Supabase config baked in and will fail on launch.
 
 ## Notes for contributors
 
