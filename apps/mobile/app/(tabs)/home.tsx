@@ -48,7 +48,7 @@ export default function Home() {
   );
 
   const pickPhoto = async () => {
-    if (!profile) return;
+    if (!profile || profile.isOwner === false) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -187,7 +187,7 @@ export default function Home() {
         bornSummary={bornSummary}
         actualAge={heroActualAge}
         correctedAge={heroCorrectedAge}
-        onPressPhoto={pickPhoto}
+        onPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
       />
       <Text
         style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}
