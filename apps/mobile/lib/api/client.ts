@@ -28,7 +28,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        // Fastify's JSON body parser rejects an empty body sent with this
+        // header (FST_ERR_CTP_EMPTY_JSON_BODY) — only set it when there's
+        // actually a body (e.g. not a bodyless DELETE like revokeShare).
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
         Authorization: `Bearer ${data.session.access_token}`,
         ...(init?.headers ?? {}),
       },

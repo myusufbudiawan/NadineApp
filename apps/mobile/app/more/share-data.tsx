@@ -61,7 +61,7 @@ export default function ShareData() {
       </Text>
 
       <Card style={{ gap: space.md }}>
-        <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.text }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
           Invite a caregiver
         </Text>
         <TextInput
@@ -161,7 +161,7 @@ export default function ShareData() {
 
       {revokedGrants.length > 0 && (
         <>
-          <Text style={{ fontSize: type.label, fontWeight: '700', color: colors.muted }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.muted }}>
             Revoked
           </Text>
           {revokedGrants.map((grant) => (

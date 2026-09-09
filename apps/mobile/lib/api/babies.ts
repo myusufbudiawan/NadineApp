@@ -1,7 +1,11 @@
 import { apiFetch } from './client';
 import { BabyProfile } from '@/features/baby-profile/types';
 
-type ServerBaby = BabyProfile & { userId: string };
+export type ServerBaby = BabyProfile & {
+  userId: string;
+  isOwner: boolean;
+  permission?: 'read' | 'write';
+};
 
 export const listBabies = () => apiFetch<ServerBaby[]>('/v1/babies');
 

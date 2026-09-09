@@ -79,7 +79,16 @@ export default function Index() {
       try {
         const babies = await listBabies();
         if (!active) return;
-        if (babies.length > 0) {
+        if (babies.length > 1) {
+          // More than one accessible baby (own + shared, e.g. Mom and Dad on
+          // the same baby plus Dad's own) — let them pick which one this
+          // device shows, rather than silently defaulting to babies[0].
+          await setLocalDataOwner(accountId);
+          setTarget('/select-baby');
+        } else if (babies.length === 1) {
+          // Also covers the invited-caregiver case: someone shared a baby
+          // with this account and it owns none of its own — this is exactly
+          // as if they'd created it themselves, no baby-setup needed.
           const serverBaby = babies[0];
           await setServerBabyId(serverBaby.id);
           await saveProfile(LOCAL_BABY_ID, JSON.stringify({ ...serverBaby, id: LOCAL_BABY_ID }));

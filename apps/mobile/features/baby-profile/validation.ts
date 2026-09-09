@@ -24,7 +24,26 @@ export function validateBaby(
     (input.gestationalDays ?? 9) > 6
   )
     errors.gestationalDays = 'Enter gestational days from 0 to 6.';
-  if ((input.birthWeightKg ?? 0) <= 0)
-    errors.birthWeightKg = 'Enter a positive birth weight.';
+  // Number.isFinite (not a bare `<= 0` comparison) so a blank/unparseable
+  // field — which arrives here as NaN — is rejected rather than silently
+  // passing (NaN <= 0 is false, so NaN would otherwise slip through).
+  if (
+    !Number.isFinite(input.birthWeightKg) ||
+    (input.birthWeightKg as number) <= 0 ||
+    (input.birthWeightKg as number) > 8
+  )
+    errors.birthWeightKg = 'Enter a birth weight between 0 and 8 kg.';
+  if (
+    input.birthLengthCm !== undefined &&
+    (!Number.isFinite(input.birthLengthCm) || input.birthLengthCm <= 0 || input.birthLengthCm > 70)
+  )
+    errors.birthLengthCm = 'Enter a birth length between 0 and 70 cm.';
+  if (
+    input.birthHeadCircumferenceCm !== undefined &&
+    (!Number.isFinite(input.birthHeadCircumferenceCm) ||
+      input.birthHeadCircumferenceCm <= 0 ||
+      input.birthHeadCircumferenceCm > 50)
+  )
+    errors.birthHeadCircumferenceCm = 'Enter a head circumference between 0 and 50 cm.';
   return errors;
 }
