@@ -42,6 +42,13 @@ CREATE TABLE IF NOT EXISTS care_events (id UUID PRIMARY KEY, baby_id UUID NOT NU
 CREATE INDEX IF NOT EXISTS care_events_baby_type_idx ON care_events (baby_id, type, occurred_at DESC) WHERE deleted_at IS NULL;
 CREATE TABLE IF NOT EXISTS growth_measurements (id UUID PRIMARY KEY, baby_id UUID NOT NULL REFERENCES babies(id), metric TEXT NOT NULL, value NUMERIC NOT NULL, unit TEXT NOT NULL, measured_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS growth_measurements_baby_metric_idx ON growth_measurements (baby_id, metric, measured_at);
+-- Nullable + partial unique index (not NOT NULL like care_events.idempotency_key)
+-- since this was bolted on after the table already existed: lets a mobile
+-- client's local measurement id round-trip through create -> cross-device
+-- pull without creating a second copy of the same measurement.
+ALTER TABLE growth_measurements ADD COLUMN IF NOT EXISTS idempotency_key UUID;
+CREATE UNIQUE INDEX IF NOT EXISTS growth_measurements_baby_idempotency_idx
+  ON growth_measurements (baby_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE TABLE IF NOT EXISTS tip_content (id UUID PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, category TEXT NOT NULL, min_corrected_age_days INTEGER, max_corrected_age_days INTEGER, source TEXT NOT NULL, review_status TEXT NOT NULL DEFAULT 'needs-clinical-review', reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS tip_content_category_status_idx ON tip_content (category, review_status);
 CREATE TABLE IF NOT EXISTS reminders (id UUID PRIMARY KEY, baby_id UUID NOT NULL REFERENCES babies(id), type TEXT NOT NULL, title TEXT NOT NULL, time_of_day TEXT NOT NULL, days_of_week SMALLINT[] NOT NULL, timezone TEXT NOT NULL, enabled BOOLEAN NOT NULL DEFAULT true, status TEXT NOT NULL DEFAULT 'pending', snoozed_until TIMESTAMPTZ, last_completed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now());

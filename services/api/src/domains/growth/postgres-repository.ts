@@ -20,8 +20,8 @@ export class PostgresGrowthRepository implements GrowthRepository {
 
   async create(measurement: StoredGrowthMeasurement) {
     await this.db.query(
-      `INSERT INTO growth_measurements (id, baby_id, metric, value, unit, measured_at, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO growth_measurements (id, baby_id, metric, value, unit, measured_at, created_at, idempotency_key)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         measurement.id,
         measurement.babyId,
@@ -30,9 +30,18 @@ export class PostgresGrowthRepository implements GrowthRepository {
         measurement.unit,
         measurement.measuredAt,
         measurement.createdAt,
+        measurement.idempotencyKey ?? null,
       ],
     );
     return measurement;
+  }
+
+  async findByIdempotencyKey(babyId: string, idempotencyKey: string) {
+    const { rows } = await this.db.query(
+      `SELECT * FROM growth_measurements WHERE baby_id = $1 AND idempotency_key = $2`,
+      [babyId, idempotencyKey],
+    );
+    return rows[0] ? toStoredGrowthMeasurement(rows[0]) : undefined;
   }
 }
 
@@ -45,5 +54,6 @@ function toStoredGrowthMeasurement(row: Record<string, unknown>): StoredGrowthMe
     unit: row.unit as string,
     measuredAt: row.measured_at as Date,
     createdAt: row.created_at as Date,
+    idempotencyKey: (row.idempotency_key as string | null) ?? undefined,
   };
 }

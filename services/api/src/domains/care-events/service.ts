@@ -8,6 +8,7 @@ import {
 } from './repository.js';
 
 export type CreateCareEventInput = {
+  id?: string;
   type: CareEventType;
   occurredAt: Date;
   data: Record<string, unknown>;
@@ -51,7 +52,7 @@ export class CareEventsService {
 
     const now = new Date();
     const event = await this.repository.create({
-      id: randomUUID(),
+      id: input.id ?? randomUUID(),
       babyId,
       type: input.type,
       occurredAt: input.occurredAt,

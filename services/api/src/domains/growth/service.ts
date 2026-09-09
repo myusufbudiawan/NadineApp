@@ -15,6 +15,10 @@ export class GrowthService {
   }
 
   async create(actorId: string, babyId: string, input: GrowthInput) {
+    if (input.idempotencyKey) {
+      const existing = await this.repository.findByIdempotencyKey(babyId, input.idempotencyKey);
+      if (existing) return existing;
+    }
     const now = new Date();
     const measurement = await this.repository.create({
       id: randomUUID(),
@@ -24,6 +28,7 @@ export class GrowthService {
       unit: input.unit,
       measuredAt: input.measuredAt,
       createdAt: now,
+      idempotencyKey: input.idempotencyKey,
     });
     await this.audit.record({
       actorId,

@@ -116,7 +116,7 @@ export function buildServer(
     }),
   );
   app.register((instance) =>
-    syncRoutes(instance, { careEventsService, babyProfileService, sharingService }),
+    syncRoutes(instance, { careEventsService, babyProfileService, sharingService, growthService }),
   );
   app.register((instance) => auditRoutes(instance, { babyProfileService, sharingService }));
   return app;

@@ -11,13 +11,17 @@
       "expo-secure-store",
       "expo-notifications",
       "expo-sqlite",
+      "expo-local-authentication",
       "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "ios": {
-      "bundleIdentifier": "com.anonymous.preemietrack"
+      "bundleIdentifier": "com.anonymous.preemietrack",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Use Face ID to unlock PreemieTrack."
+      }
     }
   }
 }

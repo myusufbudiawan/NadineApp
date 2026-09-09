@@ -59,6 +59,22 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   return database;
 }
 
+// Wipes every local table before reconciling a device whose cached data
+// belongs to a different account (see lib/offline/serverBaby.ts) — none of
+// these tables are keyed by user id, so a stale row here would otherwise
+// leak the previous account's baby/care-events/etc. into the new one.
+export async function resetLocalData() {
+  const database = await getDatabase();
+  await database.execAsync(
+    `DELETE FROM baby_profiles;
+     DELETE FROM mutation_queue;
+     DELETE FROM sync_conflicts;
+     DELETE FROM care_events;
+     DELETE FROM growth_measurements;
+     DELETE FROM reminders;`,
+  );
+}
+
 export function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   if (!dbPromise) {
     dbPromise = openAndMigrate().catch((error) => {
@@ -230,6 +246,36 @@ export async function insertCareEvent(event: {
   );
 }
 
+// Cross-device pull (lib/offline/hydrate.ts): the server row's own id is
+// used as the local id (care-event creation now always echoes the client's
+// original id back — see services/api care-events/service.ts), so re-running
+// hydration is naturally idempotent via INSERT OR IGNORE rather than needing
+// a separate "does this exist" check.
+export async function insertCareEventIfMissing(event: {
+  id: string;
+  babyId: string;
+  type: string;
+  occurredAt: string;
+  data: unknown;
+  notes?: string;
+  serverUpdatedAt: string;
+}) {
+  const database = await getDatabase();
+  const now = new Date().toISOString();
+  await database.runAsync(
+    'INSERT OR IGNORE INTO care_events (id, baby_id, type, occurred_at, data, notes, created_at, updated_at, deleted_at, server_updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)',
+    event.id,
+    event.babyId,
+    event.type,
+    event.occurredAt,
+    JSON.stringify(event.data),
+    event.notes ?? null,
+    now,
+    now,
+    event.serverUpdatedAt,
+  );
+}
+
 export async function getCareEventById(id: string): Promise<CareEventRow | undefined> {
   const database = await getDatabase();
   const rows = await database.getAllAsync<CareEventRow>(
@@ -353,6 +399,31 @@ export async function insertGrowthMeasurement(measurement: {
   const database = await getDatabase();
   await database.runAsync(
     'INSERT INTO growth_measurements (id, baby_id, metric, value, unit, measured_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    measurement.id,
+    measurement.babyId,
+    measurement.metric,
+    measurement.value,
+    measurement.unit,
+    measurement.measuredAt,
+    new Date().toISOString(),
+  );
+}
+
+// Cross-device pull (lib/offline/hydrate.ts). Unlike care events, the
+// server still mints its own id for growth measurements, so the caller must
+// pass the measurement's idempotencyKey (the originating device's local id)
+// as `id` here — that's what makes repeat hydration idempotent.
+export async function insertGrowthMeasurementIfMissing(measurement: {
+  id: string;
+  babyId: string;
+  metric: string;
+  value: number;
+  unit: string;
+  measuredAt: string;
+}) {
+  const database = await getDatabase();
+  await database.runAsync(
+    'INSERT OR IGNORE INTO growth_measurements (id, baby_id, metric, value, unit, measured_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
     measurement.id,
     measurement.babyId,
     measurement.metric,

@@ -13,7 +13,8 @@ import { validateBaby } from '@/features/baby-profile/validation';
 import { createBaby, updateBaby } from '@/lib/api/babies';
 import { ApiError } from '@/lib/api/client';
 import { queueMutation, saveProfile } from '@/lib/offline/database';
-import { getServerBabyId, setServerBabyId } from '@/lib/offline/serverBaby';
+import { getServerBabyId, setLocalDataOwner, setServerBabyId } from '@/lib/offline/serverBaby';
+import { supabase } from '@/lib/supabase/client';
 import * as Crypto from 'expo-crypto';
 type DraftProfile = Omit<BabyProfile, 'sex'> & { sex?: BabySex };
 const initial: DraftProfile = {
@@ -84,9 +85,12 @@ export default function BabySetup() {
         const created = await createBaby(payload);
         await setServerBabyId(created.id);
       }
+      const { data } = await supabase.auth.getSession();
+      if (data.session) await setLocalDataOwner(data.session.user.id);
     } catch (err) {
       // Retry later via the same mutation queue/backoff care-events use
       // (see lib/offline/sync.ts), instead of losing this write silently.
+      console.warn('baby-profile: server save failed, queued for retry', err);
       await queueMutation(Crypto.randomUUID(), 'baby-profile', JSON.stringify(payload));
       Alert.alert(
         'Saved on this device',

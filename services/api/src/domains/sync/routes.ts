@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { BabyProfileService } from '../baby-profile/service.js';
 import { CareEventsService } from '../care-events/service.js';
+import { GrowthService } from '../growth/service.js';
 import { SharingService } from '../sharing/service.js';
 import { PostgresSyncRepository } from './postgres-repository.js';
 import { syncSchema } from './schema.js';
@@ -13,6 +14,7 @@ export async function syncRoutes(
     careEventsService: CareEventsService;
     babyProfileService: BabyProfileService;
     sharingService: SharingService;
+    growthService: GrowthService;
   },
 ) {
   const service = new SyncService(
@@ -20,6 +22,7 @@ export async function syncRoutes(
     new PostgresSyncRepository(db),
     deps.babyProfileService,
     deps.sharingService,
+    deps.growthService,
   );
 
   app.post('/v1/sync', async (request) => {

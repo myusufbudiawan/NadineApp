@@ -11,6 +11,12 @@ export const growthSchema = z
     value: z.number().positive(),
     unit: z.enum(['kg', 'lb', 'cm', 'in']),
     measuredAt: z.coerce.date(),
+    // Lets the mobile client's local row id round-trip: cross-device pull
+    // (see lib/offline/hydrate.ts) reconciles against this instead of the
+    // server-assigned id, so re-pulling the same measurement never
+    // duplicates it locally. Optional/server-generated when absent so
+    // direct API callers aren't required to supply one.
+    idempotencyKey: z.string().uuid().optional(),
   })
   .refine(
     (d) => {

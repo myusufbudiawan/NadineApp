@@ -18,6 +18,27 @@ export async function setServerBabyId(id: string): Promise<void> {
   await secureStoreAdapter.setItem(KEY, id);
 }
 
+export async function clearServerBabyId(): Promise<void> {
+  await secureStoreAdapter.removeItem(KEY);
+}
+
+// All local tables (baby_profiles, care_events, growth_measurements, ...)
+// are single-account-per-device — none of them are keyed by user id. This
+// remembers which account's data currently occupies this device's local
+// storage, so app startup (app/index.tsx) can tell "safe to offline-open
+// from cache" (same account as last sync) apart from "a different account
+// signed in on this device" (must wipe local data first, never trust it).
+const OWNER_KEY = 'preemietrack.localDataOwnerId';
+
+export async function getLocalDataOwner(): Promise<string | undefined> {
+  const value = await secureStoreAdapter.getItem(OWNER_KEY);
+  return value ?? undefined;
+}
+
+export async function setLocalDataOwner(userId: string): Promise<void> {
+  await secureStoreAdapter.setItem(OWNER_KEY, userId);
+}
+
 export class NoServerBabyError extends Error {
   constructor() {
     super("Set up your baby's profile first.");

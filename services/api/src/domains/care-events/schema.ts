@@ -4,6 +4,12 @@ const envelope = {
   occurredAt: z.coerce.date(),
   notes: z.string().max(2000).optional(),
   idempotencyKey: z.string().uuid(),
+  // Lets the mobile client's local row id become the canonical server id —
+  // otherwise the server mints its own random id and every subsequent
+  // update/delete for that event (which references the client's local id)
+  // fails with "not found". Optional so direct API callers aren't required
+  // to supply one.
+  id: z.string().uuid().optional(),
 };
 
 const feedingData = z.object({

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { careEventSchema, careEventPatchSchema } from '../care-events/schema.js';
+import { growthSchema } from '../growth/schema.js';
 
 // Mirrors the mutation shapes apps/mobile/lib/offline/database.ts already
 // queues today (Phase 1) — the sync engine is what finally drains that queue.
@@ -27,10 +28,17 @@ const careEventDeleteMutation = z.object({
   payload: z.object({ id: z.string(), babyId: z.string() }),
 });
 
+const growthMeasurementMutation = z.object({
+  id: z.string(),
+  type: z.literal('growth-measurement'),
+  payload: growthSchema.and(z.object({ babyId: z.string() })),
+});
+
 export const syncMutationSchema = z.discriminatedUnion('type', [
   careEventCreateMutation,
   careEventUpdateMutation,
   careEventDeleteMutation,
+  growthMeasurementMutation,
 ]);
 
 export const syncSchema = z.object({

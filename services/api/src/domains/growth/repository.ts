@@ -8,6 +8,7 @@ export type StoredGrowthMeasurement = {
   unit: string;
   measuredAt: Date;
   createdAt: Date;
+  idempotencyKey?: string;
 };
 
 export interface GrowthRepository {
@@ -18,6 +19,10 @@ export interface GrowthRepository {
     to?: Date,
   ): Promise<StoredGrowthMeasurement[]>;
   create(measurement: StoredGrowthMeasurement): Promise<StoredGrowthMeasurement>;
+  findByIdempotencyKey(
+    babyId: string,
+    idempotencyKey: string,
+  ): Promise<StoredGrowthMeasurement | undefined>;
 }
 
 export class InMemoryGrowthRepository implements GrowthRepository {
@@ -38,5 +43,11 @@ export class InMemoryGrowthRepository implements GrowthRepository {
   async create(measurement: StoredGrowthMeasurement) {
     this.measurements.set(measurement.id, measurement);
     return measurement;
+  }
+
+  async findByIdempotencyKey(babyId: string, idempotencyKey: string) {
+    return [...this.measurements.values()].find(
+      (m) => m.babyId === babyId && m.idempotencyKey === idempotencyKey,
+    );
   }
 }

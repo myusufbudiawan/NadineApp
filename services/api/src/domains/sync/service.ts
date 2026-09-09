@@ -2,6 +2,7 @@ import { assertBabyAccess } from '../../common/auth/baby-access.js';
 import { BabyProfileService } from '../baby-profile/service.js';
 import { ConflictError } from '../care-events/service.js';
 import type { CareEventsService } from '../care-events/service.js';
+import type { GrowthService } from '../growth/service.js';
 import { SharingService } from '../sharing/service.js';
 import { SyncMutation } from './schema.js';
 import { SyncMutationResult, SyncRepository } from './repository.js';
@@ -16,6 +17,7 @@ export class SyncService {
     private repository: SyncRepository,
     private babyProfile: BabyProfileService,
     private sharing: SharingService,
+    private growth: GrowthService,
   ) {}
 
   async apply(actorId: string, actorEmail: string, mutations: SyncMutation[]): Promise<SyncMutationResult[]> {
@@ -82,6 +84,11 @@ export class SyncService {
         const { babyId, id } = mutation.payload;
         const event = await this.careEvents.remove(actorId, babyId, id);
         return { id: mutation.id, status: 'applied', event };
+      }
+      case 'growth-measurement': {
+        const { babyId, ...input } = mutation.payload;
+        const measurement = await this.growth.create(actorId, babyId, input);
+        return { id: mutation.id, status: 'applied', event: measurement };
       }
     }
   }

@@ -1,8 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
+import { canUseBiometricLock, unlockWithBiometrics } from '@/lib/auth/biometric';
+import { markUnlockedThisLaunch } from '@/lib/auth/unlockState';
 import { colors, radius, space, type } from '@/lib/design-system/tokens';
 import { supabase } from '@/lib/supabase/client';
 
@@ -16,6 +18,24 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  // Reaching this screen at all normally means there's no session to
+  // restore (app/index.tsx already redirects away from here whenever one
+  // exists) — this only lights up in the edge case where a still-valid
+  // session got the user here anyway (e.g. a stale deep link), letting them
+  // skip straight past typing their password.
+  const [canBiometricSignIn, setCanBiometricSignIn] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const hasHardware = data.session ? await canUseBiometricLock() : false;
+      if (active) setCanBiometricSignIn(hasHardware);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const submit = async () => {
     setError(undefined);
@@ -29,10 +49,21 @@ export default function Login() {
         setError(friendlyMessage(authError.message));
         return;
       }
+      // Already proved identity with the password just now — app/index.tsx
+      // shouldn't immediately ask for Face ID too.
+      markUnlockedThisLaunch();
       router.replace('/');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const signInWithBiometrics = async () => {
+    setError(undefined);
+    const unlocked = await unlockWithBiometrics();
+    if (!unlocked) return;
+    markUnlockedThisLaunch();
+    router.replace('/');
   };
 
   return (
@@ -88,6 +119,12 @@ export default function Login() {
       <Button disabled={submitting || !email || !password} onPress={submit}>
         {submitting ? 'Please wait…' : mode === 'signin' ? 'Sign in' : 'Create account'}
       </Button>
+
+      {canBiometricSignIn && mode === 'signin' && (
+        <Button variant="secondary" onPress={signInWithBiometrics}>
+          Sign in with Face ID
+        </Button>
+      )}
 
       <Text
         accessibilityRole="link"

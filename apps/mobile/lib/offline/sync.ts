@@ -10,7 +10,8 @@ import {
   setServerUpdatedAt,
   MutationQueueRow,
 } from './database';
-import { getServerBabyId, setServerBabyId } from './serverBaby';
+import { getServerBabyId, setLocalDataOwner, setServerBabyId } from './serverBaby';
+import { supabase } from '@/lib/supabase/client';
 
 // FR-017 / Section 11 5.1 — the sync engine that finally drains the
 // mutation_queue every screen under features/care-events has been writing
@@ -118,6 +119,8 @@ async function syncBabyProfileRow(row: MutationQueueRow, summary: SyncSummary) {
       const created = await createBaby(payload);
       await setServerBabyId(created.id);
     }
+    const { data } = await supabase.auth.getSession();
+    if (data.session) await setLocalDataOwner(data.session.user.id);
     await markMutationSynced(row.id);
     summary.applied += 1;
   } catch (error) {
@@ -129,12 +132,21 @@ async function syncBabyProfileRow(row: MutationQueueRow, summary: SyncSummary) {
 async function failRow(row: MutationQueueRow, error: string) {
   const attempts = row.attempts + 1;
   const nextAttemptAt = new Date(Date.now() + backoffFor(attempts)).toISOString();
+  console.warn(
+    `sync: ${row.entity_type} mutation ${row.id} failed (attempt ${attempts}), retrying at ${nextAttemptAt}: ${error}`,
+  );
   await markMutationFailed(row.id, attempts, nextAttemptAt, error);
 }
 
+const CARE_EVENT_TYPES = new Set(['care-event', 'care-event-update']);
+
 async function applyResult(row: MutationQueueRow, result: SyncMutationResult) {
   if (result.status === 'applied' || result.status === 'duplicate') {
-    if (result.event) await setServerUpdatedAt(result.event.id, result.event.updatedAt);
+    // Only care-event rows have a server_updated_at column to reconcile;
+    // growth-measurement rows have no equivalent conflict-check field.
+    if (result.event && CARE_EVENT_TYPES.has(row.entity_type)) {
+      await setServerUpdatedAt(result.event.id, result.event.updatedAt);
+    }
     await markMutationSynced(row.id);
     return;
   }

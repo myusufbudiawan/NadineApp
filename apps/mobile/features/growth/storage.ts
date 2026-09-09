@@ -54,12 +54,15 @@ export async function saveGrowthMeasurement(
     Crypto.randomUUID(),
     'growth-measurement',
     JSON.stringify({
-      id,
       babyId: input.babyId,
       metric: input.metric,
       value: input.value,
       unit: input.unit,
       measuredAt,
+      // Server dedups/reconciles cross-device pulls on this, not the
+      // server-assigned row id (see lib/offline/hydrate.ts) — must equal
+      // this row's local id so a later pull recognizes it as already-local.
+      idempotencyKey: id,
     }),
   );
 
