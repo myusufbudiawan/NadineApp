@@ -28,7 +28,7 @@ export class SharingService {
     const grant = await this.repository.create({
       id: randomUUID(),
       babyId,
-      granteeEmail: input.recipientEmail,
+      granteeEmail: input.recipientEmail.trim().toLowerCase(),
       permission: input.permission,
       createdAt: new Date(),
     });
@@ -69,10 +69,11 @@ export class SharingService {
   // (common/auth/baby-access.ts) — revoked or absent grants never grant
   // access.
   async hasActiveAccess(babyId: string, granteeEmail: string, permission: SharePermission = 'read') {
+    const target = granteeEmail.toLowerCase();
     const grants = await this.repository.list(babyId);
     return grants.some(
       (g) =>
-        g.granteeEmail === granteeEmail &&
+        g.granteeEmail.toLowerCase() === target &&
         !g.revokedAt &&
         (permission === 'read' || g.permission === 'write'),
     );

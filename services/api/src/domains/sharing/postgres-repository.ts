@@ -13,8 +13,10 @@ export class PostgresShareRepository implements ShareRepository {
   }
 
   async listByEmail(granteeEmail: string) {
+    // Case-insensitive: an invite typed as "Mom@Example.com" must still match
+    // an account whose email Supabase stores lowercased, or vice versa.
     const { rows } = await this.db.query(
-      `SELECT * FROM share_grants WHERE grantee_email = $1 ORDER BY created_at ASC`,
+      `SELECT * FROM share_grants WHERE lower(grantee_email) = lower($1) ORDER BY created_at ASC`,
       [granteeEmail],
     );
     return rows.map(toStoredShareGrant);

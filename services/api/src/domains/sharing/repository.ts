@@ -25,7 +25,8 @@ export class InMemoryShareRepository implements ShareRepository {
   }
 
   async listByEmail(granteeEmail: string) {
-    return [...this.grants.values()].filter((g) => g.granteeEmail === granteeEmail);
+    const target = granteeEmail.toLowerCase();
+    return [...this.grants.values()].filter((g) => g.granteeEmail.toLowerCase() === target);
   }
 
   async get(id: string) {
