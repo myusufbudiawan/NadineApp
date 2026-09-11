@@ -104,7 +104,7 @@ export default function More() {
               color: colors.text,
             }}
           >
-            {profile?.name || 'Your baby'} <Text style={{ color: colors.pink }}>♥</Text>
+            {profile?.name || 'Your baby'}
           </Text>
           <Text
             style={{

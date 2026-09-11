@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -47,8 +48,11 @@ export function DatePicker({
           borderColor: colors.line,
         }}
       >
-        <Text style={{ fontSize: type.body, color: colors.text }}>📅 {display}</Text>
-        <Text style={{ color: colors.muted }}>⌄</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="calendar-outline" size={16} color={colors.text} />
+          <Text style={{ fontSize: type.body, color: colors.text }}>{display}</Text>
+        </View>
+        <Ionicons name="chevron-down" size={14} color={colors.muted} />
       </Pressable>
       {visible && (
         <DateTimePicker

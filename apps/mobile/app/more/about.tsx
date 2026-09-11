@@ -65,7 +65,7 @@ export default function About() {
       </Card>
 
       <Text style={{ color: colors.muted, fontSize: type.caption, textAlign: 'center' }}>
-        Made with {'❤'} for preemie families.
+        Made with care for preemie families.
       </Text>
     </FormScreen>
   );
