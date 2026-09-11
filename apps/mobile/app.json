@@ -6,13 +6,23 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "backgroundColor": "#f3f2f2",
     "plugins": [
       "expo-router",
       "expo-secure-store",
       "expo-notifications",
       "expo-sqlite",
       "expo-local-authentication",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/icon.png",
+          "imageWidth": 160,
+          "backgroundColor": "#f3f2f2"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -29,7 +39,11 @@
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#faf8f6"
+      }
     },
     "extra": {
       "router": {},
