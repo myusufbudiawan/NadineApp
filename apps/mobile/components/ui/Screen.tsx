@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View, ViewProps } from 'react-native';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBar } from './BottomTabBar';
 import { useBabySex } from '@/features/baby-profile/useBabySex';
@@ -28,13 +28,22 @@ function GradientGround({ style, children }: PropsWithChildren<Pick<ViewProps, '
   );
 }
 
-export function TabScreen({ children }: PropsWithChildren) {
+export function TabScreen({
+  children,
+  refreshing,
+  onRefresh,
+}: PropsWithChildren<{ refreshing?: boolean; onRefresh?: () => void }>) {
   const insets = useSafeAreaInsets();
   return (
     <GradientGround style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, gap: 18 }}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
+          ) : undefined
+        }
       >
         {children}
       </ScrollView>

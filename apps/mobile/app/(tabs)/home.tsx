@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Text, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
@@ -14,9 +14,60 @@ import { pushBabyProfile } from '@/features/baby-profile/pushToServer';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { computeTodaySummary, TodaySummary } from '@/features/care-events/todaySummary';
+import { loadReminders, ReminderView } from '@/features/reminders/storage';
+import { reminderTypeLabels } from '@/features/reminders/types';
 import { actualAge, correctedAge, toAge } from '@/lib/age';
+import { getDailyEncouragement } from '@/lib/encouragement';
+import { getGreeting } from '@/lib/greeting';
 import { saveProfile } from '@/lib/offline/database';
+import { hydrateFromServer } from '@/lib/offline/hydrate';
+import { getServerBabyId } from '@/lib/offline/serverBaby';
+import { runSync } from '@/lib/offline/sync';
 import { colors, type } from '@/lib/design-system/tokens';
+
+function SyncBanner({ status }: { status: 'success' | 'error' }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.delay(1500),
+      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
+  }, [opacity]);
+  const success = status === 'success';
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        alignSelf: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        backgroundColor: success ? colors.accentStrong : '#D9534F',
+      }}
+    >
+      <Ionicons
+        name={success ? 'checkmark-circle' : 'alert-circle'}
+        size={14}
+        color={colors.white}
+      />
+      <Text style={{ color: colors.white, fontSize: type.caption, fontFamily: type.fontBodyMedium }}>
+        {success ? 'Synced' : "Couldn't sync — will retry"}
+      </Text>
+    </Animated.View>
+  );
+}
+
+function formatDueLabel(date: Date, now: Date) {
+  const minutes = Math.round((date.getTime() - now.getTime()) / 60000);
+  if (minutes <= 0) return 'now';
+  if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`;
+  const hours = Math.round(minutes / 60);
+  return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+}
 
 function formatDuration(totalMinutes: number) {
   const h = Math.floor(totalMinutes / 60);
@@ -27,15 +78,25 @@ function formatDuration(totalMinutes: number) {
 export default function Home() {
   const [profile, setProfile] = useState<BabyProfile | undefined>(undefined);
   const [summary, setSummary] = useState<TodaySummary | undefined>(undefined);
+  const [upcoming, setUpcoming] = useState<ReminderView[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'success' | 'error'>();
 
   const refresh = useCallback(async () => {
-    const [nextProfile, nextSummary] = await Promise.all([
+    const [nextProfile, nextSummary, reminders] = await Promise.all([
       loadBabyProfile(LOCAL_BABY_ID),
       computeTodaySummary(LOCAL_BABY_ID),
+      loadReminders(LOCAL_BABY_ID),
     ]);
     setProfile(nextProfile);
     setSummary(nextSummary);
+    setUpcoming(
+      reminders
+        .filter((r) => r.enabled && r.nextFiresAt)
+        .sort((a, b) => a.nextFiresAt!.getTime() - b.nextFiresAt!.getTime())
+        .slice(0, 2),
+    );
     setLoaded(true);
   }, []);
 
@@ -46,6 +107,23 @@ export default function Home() {
       });
     }, [refresh]),
   );
+
+  const onPullToRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setSyncStatus(undefined);
+    try {
+      const summary = await runSync();
+      const serverBabyId = await getServerBabyId();
+      if (serverBabyId) await hydrateFromServer(serverBabyId);
+      await refresh();
+      setSyncStatus(summary.failed > 0 ? 'error' : 'success');
+    } catch (err) {
+      console.error('home pull-to-refresh sync failed', err);
+      setSyncStatus('error');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
 
   const pickPhoto = async () => {
     if (!profile || profile.isOwner === false) return;
@@ -68,7 +146,7 @@ export default function Home() {
 
   if (loaded && !profile) {
     return (
-      <TabScreen>
+      <TabScreen refreshing={refreshing} onRefresh={onPullToRefresh}>
         <View
           style={{
             flexDirection: 'row',
@@ -77,13 +155,10 @@ export default function Home() {
           }}
         >
           <View>
-            <Text style={{ color: colors.muted, fontSize: type.label }}>
-              Good morning,
-            </Text>
             <Text
               style={{ color: colors.text, fontSize: type.title, fontFamily: type.fontHeading }}
             >
-              Mama <Text style={{ color: colors.pink }}>♥</Text>
+              {getGreeting()}
             </Text>
           </View>
           <Ionicons
@@ -119,6 +194,7 @@ export default function Home() {
   let heroActualAge: { label: string; sub: string } | undefined;
   let heroCorrectedAge: { label: string; sub: string } | undefined;
   let bornSummary: string | undefined;
+  let pma: { label: string; fullTermWeeks: number; percent: number } | undefined;
 
   if (profile) {
     const dob = new Date(profile.dateOfBirth);
@@ -136,23 +212,24 @@ export default function Home() {
 
     heroActualAge = { label: `${actual.totalDays} days`, sub: postmenstrualLabel };
     // Corrected age is negative until a preterm baby reaches its full-term
-    // due date (Section 8.2) — expected, not an error, so it's labeled
-    // rather than shown as a bare negative number.
-    heroCorrectedAge = {
-      label:
-        corrected.totalDays < 0
-          ? `${Math.abs(corrected.totalDays)} days pre-term`
-          : `${corrected.totalDays} days`,
-      sub: postmenstrualLabel,
-    };
+    // due date (Section 8.2) — expected, not an error, so the sign is kept
+    // as-is rather than clamped or relabeled.
+    heroCorrectedAge = { label: `${corrected.totalDays} days`, sub: postmenstrualLabel };
     const sexLabel = profile.sex === 'girl' ? 'Girl' : 'Boy';
     bornSummary = `${sexLabel} · Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
       profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
     }`;
+    const fullTermWeeks = profile.fullTermReferenceWeeks;
+    pma = {
+      label: `${postmenstrual.weeks}w ${postmenstrual.days}d Post-Menstrual Age`,
+      fullTermWeeks,
+      percent: Math.min(100, Math.max(0, (postmenstrualDays / (fullTermWeeks * 7)) * 100)),
+    };
   }
 
   return (
-    <TabScreen>
+    <TabScreen refreshing={refreshing} onRefresh={onPullToRefresh}>
+      {syncStatus && <SyncBanner key={Date.now()} status={syncStatus} />}
       <View
         style={{
           flexDirection: 'row',
@@ -161,9 +238,6 @@ export default function Home() {
         }}
       >
         <View>
-          <Text style={{ color: colors.muted, fontSize: type.label }}>
-            Good morning,
-          </Text>
           <Text
             style={{
               color: colors.text,
@@ -171,7 +245,7 @@ export default function Home() {
               fontFamily: type.fontHeading,
             }}
           >
-            Mama
+            {getGreeting()}
           </Text>
         </View>
         <Ionicons
@@ -189,11 +263,31 @@ export default function Home() {
         correctedAge={heroCorrectedAge}
         onPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
       />
-      <Text
-        style={{ fontSize: type.label, fontFamily: type.fontHeading, color: colors.text }}
-      >
-        Today at a glance
-      </Text>
+      {pma && (
+        <View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 11, color: colors.muted }}>{pma.label}</Text>
+            <Text style={{ fontSize: 11, color: colors.muted }}>Due at {pma.fullTermWeeks}w</Text>
+          </View>
+          <View
+            style={{
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: colors.line,
+              marginTop: 6,
+              overflow: 'hidden',
+            }}
+          >
+            <View style={{ height: '100%', width: `${pma.percent}%`, backgroundColor: colors.accent }} />
+          </View>
+        </View>
+      )}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
+          Today
+        </Text>
+        <Text style={{ fontSize: 11, color: colors.faint }}>since midnight</Text>
+      </View>
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <MetricCard
           icon="scale-outline"
@@ -201,6 +295,7 @@ export default function Home() {
           value={summary?.weight.hasAny ? String(summary.weight.value) : '—'}
           unit={summary?.weight.hasAny ? summary?.weight.unit : undefined}
           caption={summary?.weight.hasAny ? summary!.weight.deltaCaption! : 'No weight logged yet'}
+          onPress={() => router.push('/track/add-weight')}
         />
         <MetricCard
           icon="water-outline"
@@ -212,6 +307,7 @@ export default function Home() {
               ? `${summary.feeding.todayCount} feeds today`
               : 'No feeding logged yet'
           }
+          onPress={() => router.push('/track/add-feeding')}
         />
       </View>
       <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -220,6 +316,7 @@ export default function Home() {
           tone="blue"
           value={summary?.sleep.hasAny ? formatDuration(summary.sleep.todayTotalMinutes) : '—'}
           caption={summary?.sleep.hasAny ? 'Total sleep today' : 'No sleep logged yet'}
+          onPress={() => router.push('/track/add-sleep')}
         />
         <MetricCard
           icon="happy-outline"
@@ -230,11 +327,69 @@ export default function Home() {
               ? `Wet ${summary.diaper.wet} / Dirty ${summary.diaper.dirty}`
               : 'No diaper logged yet'
           }
+          onPress={() => router.push('/track/add-diaper')}
         />
       </View>
+      {upcoming.length > 0 && (
+        <View>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              borderTopWidth: 1,
+              borderTopColor: colors.divider,
+              paddingTop: 18,
+            }}
+          >
+            <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
+              Next due
+            </Text>
+            <Text
+              accessibilityRole="link"
+              onPress={() => router.push('/more/reminders')}
+              style={{ fontSize: 11, color: colors.accentStrong }}
+            >
+              All reminders
+            </Text>
+          </View>
+          {upcoming.map((r) => (
+            <View
+              key={r.id}
+              style={{
+                flexDirection: 'row',
+                gap: 14,
+                alignItems: 'center',
+                paddingVertical: 10,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.line,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  fontFamily: type.fontHeading,
+                  color: colors.text,
+                  width: 48,
+                }}
+              >
+                {r.nextFiresAt?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontFamily: type.fontBodyMedium, color: colors.text }}>
+                  {r.title}
+                </Text>
+                <Text style={{ fontSize: 11, color: colors.faint, marginTop: 2 }}>
+                  {reminderTypeLabels[r.type]} · {r.nextFiresAt ? formatDueLabel(r.nextFiresAt, new Date()) : ''}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
       <EncouragementCard
-        title="Today's goal"
-        message="Keep going Mama! You're doing an amazing job."
+        title="A little encouragement"
+        message={getDailyEncouragement()}
       />
     </TabScreen>
   );
