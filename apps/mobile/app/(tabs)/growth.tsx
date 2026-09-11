@@ -17,7 +17,7 @@ import { whoReferenceBandAt } from '@/features/growth/reference-data';
 import { computeGrowthStats } from '@/features/growth/stats';
 import { loadMeasurementsForMetric } from '@/features/growth/storage';
 import { growthMetricLabels, GrowthMetric, GrowthMeasurement } from '@/features/growth/types';
-import { correctedAge, formatAgeDetailed } from '@/lib/age';
+import { actualAge, correctedAge, formatAgeDetailed } from '@/lib/age';
 import { colors, type } from '@/lib/design-system/tokens';
 
 const metricOptions: GrowthMetric[] = ['weight', 'length', 'headCircumference'];
@@ -172,6 +172,87 @@ export default function Growth() {
         message={`${profile?.name || 'Your baby'} is growing well.`}
         icon="star-outline"
       />
+      {measurements.length > 0 && profile && (
+        <View style={{ borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 16 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+            }}
+          >
+            <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
+              Readings
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() =>
+                router.push(
+                  metric === 'weight' ? '/track/add-weight' : `/track/add-growth?metric=${metric}`,
+                )
+              }
+            >
+              <Text style={{ fontSize: 11, color: colors.accentStrong }}>+ Add measurement</Text>
+            </Pressable>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              borderBottomWidth: 1,
+              borderBottomColor: colors.divider,
+              paddingBottom: 6,
+              marginTop: 10,
+            }}
+          >
+            <Text style={[readingHeaderStyle, { width: 64 }]}>Date</Text>
+            <Text style={[readingHeaderStyle, { width: 64 }]}>PMA</Text>
+            <Text style={[readingHeaderStyle, { flex: 1 }]}>Value</Text>
+            <Text style={[readingHeaderStyle, { width: 50, textAlign: 'right' }]}>Δ</Text>
+          </View>
+          {[...measurements].reverse().map((m, i, arr) => {
+            const daysOld = actualAge(new Date(profile.dateOfBirth), new Date(m.measuredAt)).totalDays;
+            const pmaDays = profile.gestationalWeeks * 7 + profile.gestationalDays + daysOld;
+            const pmaAge = { weeks: Math.floor(pmaDays / 7), days: pmaDays % 7 };
+            const next = arr[i + 1];
+            const delta = next && next.unit === m.unit ? m.value - next.value : undefined;
+            return (
+              <View
+                key={m.id}
+                style={{
+                  flexDirection: 'row',
+                  paddingVertical: 9,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.line,
+                }}
+              >
+                <Text style={[readingCellStyle, { width: 64 }]}>
+                  {new Date(m.measuredAt).toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                </Text>
+                <Text style={[readingCellStyle, { width: 64, color: colors.muted }]}>
+                  {pmaAge.weeks}w {pmaAge.days}d
+                </Text>
+                <Text style={[readingCellStyle, { flex: 1, fontFamily: type.fontBodyMedium }]}>
+                  {m.value} {m.unit}
+                </Text>
+                <Text style={[readingCellStyle, { width: 50, textAlign: 'right', color: colors.accentStrong }]}>
+                  {delta === undefined ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
     </TabScreen>
   );
 }
+
+const readingHeaderStyle = {
+  fontSize: 10,
+  letterSpacing: 0.8,
+  textTransform: 'uppercase' as const,
+  color: colors.muted,
+};
+const readingCellStyle = {
+  fontSize: 12,
+  color: colors.text,
+};
