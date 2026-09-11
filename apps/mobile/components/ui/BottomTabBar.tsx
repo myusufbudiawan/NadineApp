@@ -10,7 +10,6 @@ const tabs: {
   { label: 'Home', icon: 'home-outline', path: '/(tabs)/home' },
   { label: 'Track', icon: 'clipboard-outline', path: '/(tabs)/track' },
   { label: 'Growth', icon: 'trending-up-outline', path: '/(tabs)/growth' },
-  { label: 'Tips', icon: 'bulb-outline', path: '/(tabs)/tips' },
   { label: 'More', icon: 'ellipsis-horizontal', path: '/(tabs)/more' },
 ];
 export function BottomTabBar() {
