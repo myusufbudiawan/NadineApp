@@ -7,6 +7,7 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { listBabies } from '@/lib/api/babies';
 import { canUseBiometricLock, unlockWithBiometrics } from '@/lib/auth/biometric';
+import { hasOnboarded } from '@/lib/auth/onboardingState';
 import { isUnlockedThisLaunch, markUnlockedThisLaunch } from '@/lib/auth/unlockState';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { resetLocalData, saveProfile } from '@/lib/offline/database';
@@ -22,20 +23,20 @@ export default function Index() {
   const { session, loading } = useAuthSession();
   const [target, setTarget] = useState<string>();
   const [failed, setFailed] = useState(false);
-  const [locked, setLocked] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (loading) return;
     if (!session) {
-      setTarget('/onboarding');
+      hasOnboarded().then((onboarded) => {
+        setTarget(onboarded ? '/login' : '/onboarding');
+      });
       return;
     }
 
     const accountId = session.user.id;
     let active = true;
     setFailed(false);
-    setLocked(false);
     (async () => {
       // The Supabase session persists across app opens (no re-login needed
       // — see lib/supabase/client.ts's persistSession config) — Face
@@ -49,7 +50,10 @@ export default function Index() {
         const unlocked = await unlockWithBiometrics();
         if (!active) return;
         if (!unlocked) {
-          setLocked(true);
+          // Cancelled or failed — re-prompt immediately rather than parking
+          // on a dead-end screen; the native prompt already offers its own
+          // Cancel/passcode affordances.
+          setAttempt((n) => n + 1);
           return;
         }
       }
@@ -120,25 +124,6 @@ export default function Index() {
   }, [session, loading, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
-
-  if (locked) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: space.xl,
-          gap: space.md,
-        }}
-      >
-        <Text style={{ fontSize: type.body, color: colors.text, textAlign: 'center' }}>
-          Unlock to continue.
-        </Text>
-        <Button onPress={retry}>Unlock</Button>
-      </View>
-    );
-  }
 
   if (failed) {
     return (

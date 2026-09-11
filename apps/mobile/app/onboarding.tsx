@@ -4,6 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { markOnboarded } from '@/lib/auth/onboardingState';
 import { colors, space, type } from '@/lib/design-system/tokens';
 const points = [
   {
@@ -104,10 +105,20 @@ export default function Onboarding() {
           information and sharing.
         </Text>
       </Card>
-      <Button onPress={() => router.push('/login?mode=signup')}>Get started</Button>
+      <Button
+        onPress={() => {
+          markOnboarded();
+          router.push('/login?mode=signup');
+        }}
+      >
+        Get started
+      </Button>
       <Text
         accessibilityRole="link"
-        onPress={() => router.push('/login?mode=signin')}
+        onPress={() => {
+          markOnboarded();
+          router.push('/login?mode=signin');
+        }}
         style={{
           textAlign: 'center',
           color: colors.violet,
