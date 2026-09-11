@@ -28,9 +28,10 @@ jobs:
         id: eas
         run: echo "url=$(node -p "JSON.parse(require('fs').readFileSync('build.json'))[0].artifacts.buildUrl")" >> "$GITHUB_OUTPUT"
       - name: Download APK
-        run: curl -L "${{ steps.eas.outputs.url }}" -o app.apk
+        run: curl -L "${{ steps.eas.outputs.url }}" -o PreemieTrack.apk
       - name: Attach to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: android-${{ github.run_number }}
-          files: apps/mobile/app.apk
+          tag_name: preemietrack-${{ github.run_number }}
+          name: PreemieTrack v${{ github.run_number }}
+          files: apps/mobile/PreemieTrack.apk
