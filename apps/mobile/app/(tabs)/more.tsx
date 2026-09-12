@@ -15,6 +15,11 @@ import { colors, type } from '@/lib/design-system/tokens';
 const items = [
   { title: 'Profile & Baby Info', icon: 'person-circle-outline' as const, route: '/baby-setup' },
   { title: 'Reminders', icon: 'notifications-outline' as const, route: '/more/reminders' },
+  {
+    title: 'Customize Dashboard',
+    icon: 'grid-outline' as const,
+    route: '/more/customize-dashboard',
+  },
   { title: 'Reports', icon: 'document-text-outline' as const, route: '/more/reports' },
   { title: 'Share Data', icon: 'share-social-outline' as const, route: '/more/share-data' },
   { title: 'Settings', icon: 'settings-outline' as const, route: '/more/settings' },

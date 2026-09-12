@@ -14,6 +14,9 @@ import { pushBabyProfile } from '@/features/baby-profile/pushToServer';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { computeTodaySummary, TodaySummary } from '@/features/care-events/todaySummary';
+import { CareEventType } from '@/features/care-events/types';
+import { getDashboardMetricView } from '@/features/dashboard/metricConfig';
+import { defaultDashboardMetrics, loadDashboardMetrics } from '@/features/dashboard/preferences';
 import { loadReminders, ReminderView } from '@/features/reminders/storage';
 import { reminderTypeLabels } from '@/features/reminders/types';
 import { actualAge, correctedAge, toAge } from '@/lib/age';
@@ -69,12 +72,6 @@ function formatDueLabel(date: Date, now: Date) {
   return `in ${hours} hour${hours === 1 ? '' : 's'}`;
 }
 
-function formatDuration(totalMinutes: number) {
-  const h = Math.floor(totalMinutes / 60);
-  const m = Math.round(totalMinutes % 60);
-  return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
 export default function Home() {
   const [profile, setProfile] = useState<BabyProfile | undefined>(undefined);
   const [summary, setSummary] = useState<TodaySummary | undefined>(undefined);
@@ -82,6 +79,7 @@ export default function Home() {
   const [loaded, setLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'success' | 'error'>();
+  const [dashboardMetrics, setDashboardMetrics] = useState<CareEventType[]>(defaultDashboardMetrics);
 
   const refresh = useCallback(async () => {
     const [nextProfile, nextSummary, reminders] = await Promise.all([
@@ -106,6 +104,21 @@ export default function Home() {
         console.error('home refresh failed', err);
       });
     }, [refresh]),
+  );
+
+  // Kept independent of `refresh` (which waits on SQLite-backed reads) so the
+  // dashboard's tile selection — a fast, local-only preference — always
+  // applies even if the data-backed summary is slow to resolve.
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      loadDashboardMetrics().then((metrics) => {
+        if (active) setDashboardMetrics(metrics);
+      });
+      return () => {
+        active = false;
+      };
+    }, []),
   );
 
   const onPullToRefresh = useCallback(async () => {
@@ -286,50 +299,35 @@ export default function Home() {
         <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
           Today
         </Text>
-        <Text style={{ fontSize: 11, color: colors.faint }}>since midnight</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
+          <Text
+            accessibilityRole="link"
+            onPress={() => router.push('/more/customize-dashboard')}
+            style={{ fontSize: 11, color: colors.accentStrong }}
+          >
+            Customize
+          </Text>
+          <Text style={{ fontSize: 11, color: colors.faint }}>since midnight</Text>
+        </View>
       </View>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <MetricCard
-          icon="scale-outline"
-          tone="pink"
-          value={summary?.weight.hasAny ? String(summary.weight.value) : '—'}
-          unit={summary?.weight.hasAny ? summary?.weight.unit : undefined}
-          caption={summary?.weight.hasAny ? summary!.weight.deltaCaption! : 'No weight logged yet'}
-          onPress={() => router.push('/track/add-weight')}
-        />
-        <MetricCard
-          icon="water-outline"
-          tone="violet"
-          value={summary?.feeding.hasAny ? String(summary.feeding.lastAmount ?? '—') : '—'}
-          unit={summary?.feeding.hasAny ? summary?.feeding.lastUnit : undefined}
-          caption={
-            summary?.feeding.hasAny
-              ? `${summary.feeding.todayCount} feeds today`
-              : 'No feeding logged yet'
-          }
-          onPress={() => router.push('/track/add-feeding')}
-        />
-      </View>
-      <View style={{ flexDirection: 'row', gap: 10 }}>
-        <MetricCard
-          icon="moon-outline"
-          tone="blue"
-          value={summary?.sleep.hasAny ? formatDuration(summary.sleep.todayTotalMinutes) : '—'}
-          caption={summary?.sleep.hasAny ? 'Total sleep today' : 'No sleep logged yet'}
-          onPress={() => router.push('/track/add-sleep')}
-        />
-        <MetricCard
-          icon="happy-outline"
-          tone="yellow"
-          value={summary?.diaper.hasAny ? String(summary.diaper.todayCount) : '—'}
-          caption={
-            summary?.diaper.hasAny
-              ? `Wet ${summary.diaper.wet} / Dirty ${summary.diaper.dirty}`
-              : 'No diaper logged yet'
-          }
-          onPress={() => router.push('/track/add-diaper')}
-        />
-      </View>
+      {[0, 2].map((rowStart) => (
+        <View key={rowStart} style={{ flexDirection: 'row', gap: 10 }}>
+          {dashboardMetrics.slice(rowStart, rowStart + 2).map((metricType) => {
+            const metric = getDashboardMetricView(metricType, summary);
+            return (
+              <MetricCard
+                key={metric.type}
+                icon={metric.icon}
+                tone={metric.tone}
+                value={metric.value}
+                unit={metric.unit}
+                caption={metric.caption}
+                onPress={() => router.push(metric.route as never)}
+              />
+            );
+          })}
+        </View>
+      ))}
       {upcoming.length > 0 && (
         <View>
           <View

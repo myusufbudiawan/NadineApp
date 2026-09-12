@@ -5,6 +5,7 @@ export type CareEventType =
   | 'sleep'
   | 'temperature'
   | 'medication'
+  | 'kangaroo'
   | 'note';
 
 export type FeedingData = {
@@ -40,6 +41,11 @@ export type MedicationData = {
   scheduledAt: string;
 };
 
+export type KangarooCareData = {
+  startAt: string;
+  endAt: string;
+};
+
 export type NoteData = Record<string, never>;
 
 export type CareEventDataFor<T extends CareEventType> = T extends 'feeding'
@@ -54,7 +60,9 @@ export type CareEventDataFor<T extends CareEventType> = T extends 'feeding'
           ? TemperatureData
           : T extends 'medication'
             ? MedicationData
-            : NoteData;
+            : T extends 'kangaroo'
+              ? KangarooCareData
+              : NoteData;
 
 export type CareEventData =
   | FeedingData
@@ -63,6 +71,7 @@ export type CareEventData =
   | SleepData
   | TemperatureData
   | MedicationData
+  | KangarooCareData
   | NoteData;
 
 export type CareEvent<T extends CareEventType = CareEventType> = {

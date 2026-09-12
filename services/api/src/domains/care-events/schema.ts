@@ -64,6 +64,15 @@ const medicationData = z.object({
   takenAt: z.coerce.date().optional(),
 });
 
+const kangarooData = z
+  .object({
+    startAt: z.coerce.date(),
+    endAt: z.coerce.date(),
+  })
+  .refine((d) => d.endAt > d.startAt, {
+    message: 'endAt must be after startAt',
+  });
+
 const noteData = z.object({}).strict();
 
 export const careEventTypes = [
@@ -73,6 +82,7 @@ export const careEventTypes = [
   'sleep',
   'temperature',
   'medication',
+  'kangaroo',
   'note',
 ] as const;
 
@@ -83,6 +93,7 @@ export const careEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sleep'), data: sleepData, ...envelope }),
   z.object({ type: z.literal('temperature'), data: temperatureData, ...envelope }),
   z.object({ type: z.literal('medication'), data: medicationData, ...envelope }),
+  z.object({ type: z.literal('kangaroo'), data: kangarooData, ...envelope }),
   z.object({ type: z.literal('note'), data: noteData, ...envelope }),
 ]);
 

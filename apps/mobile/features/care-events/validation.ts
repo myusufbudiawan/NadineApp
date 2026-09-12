@@ -3,6 +3,7 @@ import {
   CareEventType,
   DiaperData,
   FeedingData,
+  KangarooCareData,
   MedicationData,
   SleepData,
   TemperatureData,
@@ -52,6 +53,13 @@ export function validateCareEventData(
       const { medicationName, dose } = data as MedicationData;
       if (!medicationName?.trim()) return 'Medication name is required';
       if (!(dose >= 0)) return 'Dose cannot be negative';
+      return undefined;
+    }
+    case 'kangaroo': {
+      const { startAt, endAt } = data as KangarooCareData;
+      if (new Date(endAt).getTime() <= new Date(startAt).getTime()) {
+        return 'End time must be after start time';
+      }
       return undefined;
     }
     case 'note':

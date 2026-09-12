@@ -1,12 +1,13 @@
 import { listCareEventsSince } from '@/lib/offline/database';
 import { loadCareEventHistory } from './storage';
-import { DiaperData, FeedingData, SleepData, WeightData } from './types';
+import { DiaperData, FeedingData, KangarooCareData, SleepData, WeightData } from './types';
 
 export type TodaySummary = {
   weight: { hasAny: boolean; value?: number; unit?: string; deltaCaption?: string };
   feeding: { hasAny: boolean; todayCount: number; lastAmount?: number; lastUnit?: string };
   sleep: { hasAny: boolean; todayTotalMinutes: number };
   diaper: { hasAny: boolean; todayCount: number; wet: number; dirty: number };
+  kangaroo: { hasAny: boolean; todayTotalMinutes: number; todayCount: number };
 };
 
 function startOfTodayIso() {
@@ -68,5 +69,17 @@ export async function computeTodaySummary(babyId: string): Promise<TodaySummary>
     dirty,
   };
 
-  return { weight, feeding, sleep, diaper };
+  const todayKangaroo = todayByType<KangarooCareData>('kangaroo');
+  const kangarooHistory = await loadCareEventHistory(babyId, 'kangaroo');
+  const kangarooTodayTotalMinutes = todayKangaroo.reduce(
+    (sum, k) => sum + Math.max(0, (new Date(k.endAt).getTime() - new Date(k.startAt).getTime()) / 60000),
+    0,
+  );
+  const kangaroo: TodaySummary['kangaroo'] = {
+    hasAny: kangarooHistory.length > 0,
+    todayTotalMinutes: kangarooTodayTotalMinutes,
+    todayCount: todayKangaroo.length,
+  };
+
+  return { weight, feeding, sleep, diaper, kangaroo };
 }

@@ -4,6 +4,7 @@ import {
   CareEventType,
   DiaperData,
   FeedingData,
+  KangarooCareData,
   MedicationData,
   SleepData,
   TemperatureData,
@@ -126,6 +127,19 @@ export const careEventRows: CareEventRowConfig[] = [
     emptyLabel: 'No sleep logged yet',
     format: (e) => {
       const d = e.data as SleepData;
+      return `Last: ${formatDuration(d.startAt, d.endAt)} · ${formatTime(e.occurredAt)}`;
+    },
+  },
+  {
+    type: 'kangaroo',
+    icon: 'heart-outline',
+    tone: 'pink',
+    title: 'Kangaroo Care',
+    route: '/track/add-kangaroo',
+    historyRoute: '/track/history/kangaroo',
+    emptyLabel: 'No kangaroo care logged yet',
+    format: (e) => {
+      const d = e.data as KangarooCareData;
       return `Last: ${formatDuration(d.startAt, d.endAt)} · ${formatTime(e.occurredAt)}`;
     },
   },
