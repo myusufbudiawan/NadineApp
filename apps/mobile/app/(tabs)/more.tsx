@@ -11,6 +11,7 @@ import { BabyProfile } from '@/features/baby-profile/types';
 import { actualAge } from '@/lib/age';
 import { listBabies } from '@/lib/api/babies';
 import { colors, type } from '@/lib/design-system/tokens';
+import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
 
 const items = [
   { title: 'Profile & Baby Info', icon: 'person-circle-outline' as const, route: '/baby-setup' },
@@ -31,6 +32,7 @@ const items = [
 export default function More() {
   const [profile, setProfile] = useState<BabyProfile>();
   const [hasMultipleBabies, setHasMultipleBabies] = useState(false);
+  const photoUrl = useBabyPhotoUrl(profile?.photoUri);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,11 +93,11 @@ export default function More() {
             overflow: 'hidden',
           }}
         >
-          {profile?.photoUri ? (
+          {photoUrl ? (
             <Image
-              source={{ uri: profile.photoUri }}
+              source={{ uri: photoUrl }}
               style={{ width: 54, height: 54 }}
-              accessibilityLabel={`${profile.name || 'Baby'}'s photo`}
+              accessibilityLabel={`${profile?.name || 'Baby'}'s photo`}
             />
           ) : (
             <Text style={{ color: colors.accentStrong, fontFamily: type.fontHeading, fontSize: 23 }}>{initial}</Text>

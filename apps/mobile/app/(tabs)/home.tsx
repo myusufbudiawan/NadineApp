@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
@@ -27,6 +27,8 @@ import { hydrateFromServer } from '@/lib/offline/hydrate';
 import { getServerBabyId } from '@/lib/offline/serverBaby';
 import { runSync } from '@/lib/offline/sync';
 import { colors, type } from '@/lib/design-system/tokens';
+import { uploadBabyPhoto } from '@/lib/supabase/storage';
+import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
 
 function SyncBanner({ status }: { status: 'success' | 'error' }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -149,13 +151,34 @@ export default function Home() {
       quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
-    const next: BabyProfile = { ...profile, photoUri: result.assets[0].uri };
+
+    const serverBabyId = await getServerBabyId();
+    if (!serverBabyId) {
+      // Baby hasn't synced to the server yet (e.g. offline since setup) —
+      // there's no id to upload the photo under, so keep it local-only for
+      // now. It'll need re-picking once the profile has synced.
+      console.warn('baby photo: no server baby id yet, skipping Storage upload');
+      return;
+    }
+
+    let photoUri: string;
+    try {
+      photoUri = await uploadBabyPhoto(serverBabyId, result.assets[0].uri);
+    } catch (err) {
+      console.warn('baby photo: Storage upload failed', err);
+      return;
+    }
+
+    const next: BabyProfile = { ...profile, photoUri };
     await saveProfile(next.id, JSON.stringify(next));
     setProfile(next);
     pushBabyProfile(next).catch((err) => {
       console.warn('baby photo: server sync failed, queued for retry', err);
     });
   };
+
+  const photoUrl = useBabyPhotoUrl(profile?.photoUri);
+  const [viewingPhoto, setViewingPhoto] = useState(false);
 
   if (loaded && !profile) {
     return (
@@ -270,12 +293,40 @@ export default function Home() {
       </View>
       <BabyHeroCard
         name={profile?.name || 'Your baby'}
-        imageUrl={profile?.photoUri}
+        imageUrl={photoUrl}
         bornSummary={bornSummary}
         actualAge={heroActualAge}
         correctedAge={heroCorrectedAge}
-        onPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
+        onPressPhoto={photoUrl ? () => setViewingPhoto(true) : undefined}
+        onLongPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
       />
+      <Modal
+        visible={viewingPhoto}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingPhoto(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setViewingPhoto(false)}
+          accessibilityLabel="Close photo"
+          accessibilityRole="button"
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {photoUrl && (
+            <Image
+              source={{ uri: photoUrl }}
+              style={{ width: '100%', height: '70%' }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+      </Modal>
       {pma && (
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
