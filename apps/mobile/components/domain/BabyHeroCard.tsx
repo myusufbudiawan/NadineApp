@@ -14,22 +14,40 @@ export function BabyHeroCard({
   actualAge,
   correctedAge,
   onPressPhoto,
+  onLongPressPhoto,
 }: {
   name?: string;
   imageUrl?: string;
   bornSummary?: string;
   actualAge?: { label: string; sub: string };
   correctedAge?: { label: string; sub: string };
+  // Tap: view the photo full-screen (only wired up when one exists).
   onPressPhoto?: () => void;
+  // Long-press: pick/change the photo (owner-only — undefined for viewers).
+  onLongPressPhoto?: () => void;
 }) {
+  // No photo yet: a single tap adds one (there's nothing to view, and
+  // making a first-time user long-press to find the picker is a bad
+  // affordance). Once a photo exists: tap views it full-screen, long-press
+  // changes it.
+  const tapHandler = imageUrl ? onPressPhoto : onLongPressPhoto;
+  const longPressHandler = imageUrl ? onLongPressPhoto : undefined;
+  const interactive = Boolean(tapHandler || longPressHandler);
   return (
     <View accessibilityLabel={`${name}'s profile`}>
       <TouchableOpacity
-        onPress={onPressPhoto}
-        disabled={!onPressPhoto}
-        activeOpacity={onPressPhoto ? 0.85 : 1}
-        accessibilityRole={onPressPhoto ? 'button' : undefined}
-        accessibilityLabel={imageUrl ? `Change ${name}'s photo` : `Add a photo of ${name}`}
+        onPress={tapHandler}
+        onLongPress={longPressHandler}
+        disabled={!interactive}
+        activeOpacity={interactive ? 0.85 : 1}
+        accessibilityRole={interactive ? 'button' : undefined}
+        accessibilityLabel={
+          imageUrl
+            ? longPressHandler
+              ? `${name}'s photo. Tap to view, long-press to change.`
+              : `View ${name}'s photo`
+            : `Add a photo of ${name}`
+        }
         style={{
           height: 230,
           borderRadius: radius.lg,
@@ -44,7 +62,7 @@ export function BabyHeroCard({
         ) : (
           <View style={{ alignItems: 'center', gap: 6 }}>
             <Ionicons name="person" size={52} color={colors.accent} />
-            {onPressPhoto && (
+            {onLongPressPhoto && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <Ionicons name="camera" size={14} color={colors.accent} />
                 <Text style={{ fontSize: 10, color: colors.accent, fontFamily: type.fontBodyMedium }}>

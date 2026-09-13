@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
@@ -165,6 +165,7 @@ export default function Home() {
   };
 
   const photoUrl = useBabyPhotoUrl(profile?.photoUri);
+  const [viewingPhoto, setViewingPhoto] = useState(false);
 
   if (loaded && !profile) {
     return (
@@ -283,8 +284,36 @@ export default function Home() {
         bornSummary={bornSummary}
         actualAge={heroActualAge}
         correctedAge={heroCorrectedAge}
-        onPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
+        onPressPhoto={photoUrl ? () => setViewingPhoto(true) : undefined}
+        onLongPressPhoto={profile?.isOwner === false ? undefined : pickPhoto}
       />
+      <Modal
+        visible={viewingPhoto}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewingPhoto(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setViewingPhoto(false)}
+          accessibilityLabel="Close photo"
+          accessibilityRole="button"
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          {photoUrl && (
+            <Image
+              source={{ uri: photoUrl }}
+              style={{ width: '100%', height: '70%' }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+      </Modal>
       {pma && (
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
