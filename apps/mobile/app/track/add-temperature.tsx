@@ -53,6 +53,7 @@ export default function AddTemperature() {
             unit: '°',
             initial: data?.value ?? 37,
             step: 0.1,
+            decimals: 2,
             rangeMin: 35,
             rangeMax: 40,
           },

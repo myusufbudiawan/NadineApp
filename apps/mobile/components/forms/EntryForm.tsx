@@ -24,6 +24,7 @@ export type EntryFormField =
       initial: number;
       min?: number;
       step?: number;
+      decimals?: number;
       rangeMin?: number;
       rangeMax?: number;
     }
@@ -129,6 +130,7 @@ export function EntryForm({
                   onChange={(value) => setValue(field.key, value)}
                   min={field.min ?? 0}
                   step={field.step ?? 1}
+                  decimals={field.decimals}
                   unit={field.unit}
                   label={field.label}
                   rangeMin={field.rangeMin}
