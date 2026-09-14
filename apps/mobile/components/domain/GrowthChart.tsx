@@ -7,7 +7,13 @@ export type GrowthChartBand = { low: number; mid: number; high: number };
 
 const Y_AXIS_GUTTER = 34;
 const BAND_STRIP_COUNT = 48;
+const BAND_CURVE_SAMPLES = 24;
 const MIN_Y_PAD = 0.5; // always leave at least this much headroom above/below the plotted range
+const BAND_CURVE_KEYS = [
+  { key: 'low', label: '15th' },
+  { key: 'mid', label: '50th' },
+  { key: 'high', label: '85th' },
+] as const;
 
 function formatWeeksForLabel(weeks: number) {
   const abs = Math.abs(weeks).toFixed(1);
@@ -44,10 +50,11 @@ function computeTicks(min: number, max: number, targetCount: number, forcedStep?
 
 // No charting library is installed (Constitution 0.A #1 — avoid introducing a
 // new dependency/paradigm mid-build), so the line, axes, and reference band
-// are all drawn with plain absolutely-positioned Views/Text: a dot per
-// point, a rotated hairline segment between each consecutive pair, tick
-// labels placed by the same coordinate math, and the shaded band approximated
-// as many thin adjacent vertical strips (there's no path-fill primitive
+// are all drawn with plain absolutely-positioned Views/Text: a rotated
+// hairline segment between each consecutive pair of points, tick labels
+// placed by the same coordinate math, the shaded band approximated as many
+// thin adjacent vertical strips, and its 15th/50th/85th boundaries drawn as
+// dashed polylines (there's no path-fill or stroke-dasharray primitive
 // without SVG). Handles zero, one, sparse, and dense datasets by deriving the
 // axis domain from the data — and from the reference band, so a band wider
 // than the plotted points is never clipped — snapped to nice round numbers,
@@ -131,7 +138,18 @@ export function GrowthChart({
   const toX = (v: number) => ((v - xMin) / (xMax - xMin || 1)) * (plotWidth || 1);
   const toY = (v: number) => height - ((v - yMin) / (yMax - yMin || 1)) * height;
   const showDueDateMarker = xMin < 0 && xMax > 0;
-  const bandVisibleInView = Boolean(referenceBandAt) && xMax >= 0;
+
+  const bandCurves = referenceBandAt
+    ? BAND_CURVE_KEYS.map(({ key, label }) => {
+        const curveSamples: { x: number; y: number }[] = [];
+        for (let i = 0; i <= BAND_CURVE_SAMPLES; i++) {
+          const ageWeeks = xMin + (i / BAND_CURVE_SAMPLES) * (xMax - xMin);
+          const band = referenceBandAt(ageWeeks);
+          if (band) curveSamples.push({ x: toX(ageWeeks), y: toY(band[key]) });
+        }
+        return { label, samples: curveSamples };
+      })
+    : [];
 
   const first = points[0];
   const last = points[points.length - 1];
@@ -202,6 +220,52 @@ export function GrowthChart({
               );
             })}
           {plotWidth > 0 &&
+            bandCurves.flatMap((curve, curveIndex) =>
+              curve.samples.slice(1).map((point, index) => {
+                const prev = curve.samples[index];
+                const dx = point.x - prev.x;
+                const dy = point.y - prev.y;
+                const length = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                return (
+                  <View
+                    key={`band-curve-${curveIndex}-${index}`}
+                    style={{
+                      position: 'absolute',
+                      left: prev.x,
+                      top: prev.y,
+                      width: length,
+                      borderTopWidth: 1,
+                      borderStyle: 'dashed',
+                      borderTopColor: colors.pink,
+                      opacity: curveIndex === 1 ? 0.85 : 0.6,
+                      transform: [{ rotate: `${angle}deg` }],
+                      transformOrigin: 'left center',
+                    }}
+                  />
+                );
+              }),
+            )}
+          {plotWidth > 0 &&
+            bandCurves.map((curve, curveIndex) => {
+              const lastPoint = curve.samples[curve.samples.length - 1];
+              if (!lastPoint) return null;
+              return (
+                <Text
+                  key={`band-label-${curveIndex}`}
+                  style={{
+                    position: 'absolute',
+                    right: 2,
+                    top: Math.min(Math.max(lastPoint.y - 7, 0), height - 12),
+                    fontSize: 8,
+                    color: colors.pink,
+                  }}
+                >
+                  {curve.label}
+                </Text>
+              );
+            })}
+          {plotWidth > 0 &&
             yTicks.map((tick) => (
               <View
                 key={tick}
@@ -224,7 +288,7 @@ export function GrowthChart({
                 bottom: 0,
                 width: 1,
                 borderLeftWidth: 1,
-                borderLeftColor: colors.muted,
+                borderLeftColor: colors.pink,
                 borderStyle: 'dashed',
               }}
             />
@@ -236,10 +300,12 @@ export function GrowthChart({
                 left: Math.min(Math.max(toX(0) + 4, 0), plotWidth - 60),
                 top: 2,
                 fontSize: 9,
-                color: colors.muted,
+                fontFamily: type.fontHeading,
+                letterSpacing: 0.6,
+                color: colors.pink,
               }}
             >
-              Due date
+              DUE DATE
             </Text>
           )}
           {plotWidth > 0 &&
@@ -261,30 +327,28 @@ export function GrowthChart({
                     left: x1,
                     top: y1,
                     width: length,
-                    height: 3,
+                    height: 2,
                     backgroundColor: colors.pink,
-                    borderRadius: 2,
-                    transform: [{ translateY: -1.5 }, { rotate: `${angle}deg` }],
+                    borderRadius: 1,
+                    transform: [{ translateY: -1 }, { rotate: `${angle}deg` }],
                     transformOrigin: 'left center',
                   }}
                 />
               );
             })}
-          {plotWidth > 0 &&
-            points.map((point, index) => (
-              <View
-                key={`dot-${point.ageWeeks}-${index}`}
-                style={{
-                  position: 'absolute',
-                  left: toX(point.ageWeeks) - 5,
-                  top: toY(point.value) - 5,
-                  width: 10,
-                  height: 10,
-                  borderRadius: 5,
-                  backgroundColor: colors.pink,
-                }}
-              />
-            ))}
+          {plotWidth > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                left: toX(last.ageWeeks) - 3.5,
+                top: toY(last.value) - 3.5,
+                width: 7,
+                height: 7,
+                borderRadius: 3.5,
+                backgroundColor: colors.pink,
+              }}
+            />
+          )}
         </View>
       </View>
       {plotWidth > 0 && (
@@ -317,38 +381,18 @@ export function GrowthChart({
       >
         Corrected age (weeks){showDueDateMarker ? ' · 0 = due date' : ''}
       </Text>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 18,
-          marginTop: 12,
-        }}
-      >
-        <Text style={{ fontSize: 11, color: colors.muted }}>
-          ● <Text style={{ color: colors.text }}>{seriesLabel}</Text>
+      {referenceLabel && (
+        <Text
+          style={{
+            marginTop: 8,
+            fontSize: 10,
+            lineHeight: 15,
+            color: colors.muted,
+          }}
+        >
+          {referenceLabel}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {bandVisibleInView ? (
-            <View
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 2,
-                backgroundColor: colors.pinkSoft,
-                borderWidth: 1,
-                borderColor: colors.pink,
-              }}
-            />
-          ) : (
-            <Text style={{ fontSize: 11, color: colors.muted }}>●</Text>
-          )}
-          <Text style={{ fontSize: 11, color: colors.muted }}>
-            {referenceLabel ?? 'Reference range — pending clinical review'}
-          </Text>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
