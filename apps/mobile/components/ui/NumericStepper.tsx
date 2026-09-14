@@ -24,6 +24,7 @@ export function NumericStepper({
   onChange,
   min = 0,
   step = 1,
+  decimals: decimalsProp,
   unit,
   label,
   rangeMin = 20,
@@ -33,12 +34,13 @@ export function NumericStepper({
   onChange: (value: number) => void;
   min?: number;
   step?: number;
+  decimals?: number;
   unit: string;
   label: string;
   rangeMin?: number;
   rangeMax?: number;
 }) {
-  const decimals = decimalsForStep(step);
+  const decimals = decimalsProp ?? decimalsForStep(step);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
 

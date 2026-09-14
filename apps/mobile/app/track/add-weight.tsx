@@ -46,6 +46,7 @@ export default function AddWeight() {
             unit: 'kg',
             initial: data?.value ?? 2,
             step: 0.1,
+            decimals: 2,
             rangeMin: 0,
             rangeMax: 6,
           },

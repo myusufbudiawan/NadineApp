@@ -36,6 +36,7 @@ export default function AddGrowth() {
             unit: 'cm',
             initial: 40,
             step: 0.1,
+            decimals: 2,
             rangeMin: 0,
             rangeMax: 100,
           },
