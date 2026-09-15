@@ -23,7 +23,7 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = PreemieTrack/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = PreemieTrack/Info.plist; sourceTree = "<group>"; };
 		5F0EFCAEDB01AB187C91DF4C /* Pods-PreemieTrack.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-PreemieTrack.release.xcconfig"; path = "Target Support Files/Pods-PreemieTrack/Pods-PreemieTrack.release.xcconfig"; sourceTree = "<group>"; };
-		6DB9B854F12C91918FE7C12A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = PreemieTrack/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6DB9B854F12C91918FE7C12A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = PreemieTrack/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		7A9A2EE21CCED26CDCC98C8A /* libPods-PreemieTrack.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-PreemieTrack.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = PreemieTrack/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
@@ -111,7 +111,6 @@
 				005561E8360C5A827FDBEDA1 /* Pods-PreemieTrack.debug.xcconfig */,
 				5F0EFCAEDB01AB187C91DF4C /* Pods-PreemieTrack.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -355,6 +354,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PreemieTrack/PreemieTrack.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 35AY65X2SJ;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -392,6 +392,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = PreemieTrack/PreemieTrack.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 35AY65X2SJ;
 				INFOPLIST_FILE = PreemieTrack/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
 				LD_RUNPATH_SEARCH_PATHS = (

@@ -8,6 +8,12 @@
       "port": 8090
     },
     {
+      "name": "mobile-metro",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start", "--prefix", "apps/mobile", "--", "--port", "8081"],
+      "port": 8081
+    },
+    {
       "name": "api",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "--prefix", "services/api"],
