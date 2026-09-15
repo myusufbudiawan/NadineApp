@@ -149,8 +149,9 @@ export default function Home() {
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true,
     });
-    if (result.canceled || !result.assets[0]) return;
+    if (result.canceled || !result.assets[0]?.base64) return;
 
     const serverBabyId = await getServerBabyId();
     if (!serverBabyId) {
@@ -163,7 +164,7 @@ export default function Home() {
 
     let photoUri: string;
     try {
-      photoUri = await uploadBabyPhoto(serverBabyId, result.assets[0].uri);
+      photoUri = await uploadBabyPhoto(serverBabyId, result.assets[0].base64);
     } catch (err) {
       console.warn('baby photo: Storage upload failed', err);
       return;
