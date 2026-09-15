@@ -2,7 +2,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PropsWithChildren } from 'react';
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BottomTabBar } from './BottomTabBar';
 import { useBabySex } from '@/features/baby-profile/useBabySex';
 import { colors, screenGradient, space } from '@/lib/design-system/tokens';
 
@@ -47,7 +46,6 @@ export function TabScreen({
       >
         {children}
       </ScrollView>
-      <BottomTabBar />
     </GradientGround>
   );
 }
