@@ -6,6 +6,7 @@ import { Animated, Image, Modal, Text, TouchableOpacity, View } from 'react-nati
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
+import { MilestoneCard } from '@/components/domain/MilestoneCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TabScreen } from '@/components/ui/Screen';
@@ -17,6 +18,8 @@ import { computeTodaySummary, TodaySummary } from '@/features/care-events/todayS
 import { CareEventType } from '@/features/care-events/types';
 import { getDashboardMetricView } from '@/features/dashboard/metricConfig';
 import { defaultDashboardMetrics, loadDashboardMetrics } from '@/features/dashboard/preferences';
+import { detectMilestones } from '@/features/milestones/detect';
+import { loadMilestones, MilestoneRecords, subscribeToMilestones } from '@/features/milestones/storage';
 import { loadReminders, ReminderView } from '@/features/reminders/storage';
 import { reminderTypeLabels } from '@/features/reminders/types';
 import { actualAge, correctedAge, toAge } from '@/lib/age';
@@ -29,6 +32,7 @@ import { runSync } from '@/lib/offline/sync';
 import { colors, type } from '@/lib/design-system/tokens';
 import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
+import { formatMeasurement } from '@/lib/format';
 
 function SyncBanner({ status }: { status: 'success' | 'error' }) {
   const opacity = useRef(new Animated.Value(0)).current;
@@ -82,15 +86,18 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'success' | 'error'>();
   const [dashboardMetrics, setDashboardMetrics] = useState<CareEventType[]>(defaultDashboardMetrics);
+  const [milestones, setMilestones] = useState<MilestoneRecords>({});
 
   const refresh = useCallback(async () => {
-    const [nextProfile, nextSummary, reminders] = await Promise.all([
+    const [nextProfile, nextSummary, reminders, nextMilestones] = await Promise.all([
       loadBabyProfile(LOCAL_BABY_ID),
       computeTodaySummary(LOCAL_BABY_ID),
       loadReminders(LOCAL_BABY_ID),
+      loadMilestones(),
     ]);
     setProfile(nextProfile);
     setSummary(nextSummary);
+    setMilestones(nextMilestones);
     setUpcoming(
       reminders
         .filter((r) => r.enabled && r.nextFiresAt)
@@ -98,7 +105,19 @@ export default function Home() {
         .slice(0, 2),
     );
     setLoaded(true);
+    // Home is where parents land after logging a weight or feed, so it's the
+    // natural moment to notice a data-driven milestone and celebrate it.
+    if (nextProfile) {
+      detectMilestones(LOCAL_BABY_ID, nextProfile).catch((err) => {
+        console.warn('milestone detection failed', err);
+      });
+    }
   }, []);
+
+  useEffect(
+    () => subscribeToMilestones(() => loadMilestones().then(setMilestones).catch(() => {})),
+    [],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -254,7 +273,7 @@ export default function Home() {
     heroCorrectedAge = { label: `${corrected.totalDays} days`, sub: postmenstrualLabel };
     const sexLabel = profile.sex === 'girl' ? 'Girl' : 'Boy';
     bornSummary = `${sexLabel} · Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
-      profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
+      profile.birthWeightKg ? ` · ${formatMeasurement(profile.birthWeightKg)} kg` : ''
     }`;
     const fullTermWeeks = profile.fullTermReferenceWeeks;
     pma = {
@@ -346,6 +365,13 @@ export default function Home() {
             <View style={{ height: '100%', width: `${pma.percent}%`, backgroundColor: colors.accent }} />
           </View>
         </View>
+      )}
+      {profile && (
+        <MilestoneCard
+          profile={profile}
+          records={milestones}
+          onPress={() => router.push('/more/milestones')}
+        />
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>

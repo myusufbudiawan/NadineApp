@@ -6,9 +6,8 @@ import { Button } from '@/components/ui/Button';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { listBabies } from '@/lib/api/babies';
-import { canUseBiometricLock, unlockWithBiometrics } from '@/lib/auth/biometric';
+import { ensureUnlockedThisLaunch } from '@/lib/auth/biometric';
 import { hasOnboarded } from '@/lib/auth/onboardingState';
-import { isUnlockedThisLaunch, markUnlockedThisLaunch } from '@/lib/auth/unlockState';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { resetLocalData, saveProfile } from '@/lib/offline/database';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
@@ -21,20 +20,23 @@ import {
 
 export default function Index() {
   const { session, loading } = useAuthSession();
+  // Keyed on the account, not the Session object — token refreshes hand
+  // back a new object for the same user, which shouldn't restart the whole
+  // unlock + reconcile flow below.
+  const accountId = session?.user.id;
   const [target, setTarget] = useState<string>();
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (loading) return;
-    if (!session) {
+    if (!accountId) {
       hasOnboarded().then((onboarded) => {
         setTarget(onboarded ? '/login' : '/onboarding');
       });
       return;
     }
 
-    const accountId = session.user.id;
     let active = true;
     setFailed(false);
     (async () => {
@@ -45,19 +47,17 @@ export default function Index() {
       // (never blocks those devices), and skipped when identity was already
       // proven this launch (a password sign-in just now, or an earlier
       // pass through here) so it never stacks right after typing a
-      // password — see lib/auth/unlockState.ts.
-      if (!isUnlockedThisLaunch() && (await canUseBiometricLock())) {
-        const unlocked = await unlockWithBiometrics();
-        if (!active) return;
-        if (!unlocked) {
-          // Cancelled or failed — re-prompt immediately rather than parking
-          // on a dead-end screen; the native prompt already offers its own
-          // Cancel/passcode affordances.
-          setAttempt((n) => n + 1);
-          return;
-        }
+      // password — see lib/auth/unlockState.ts. Concurrent runs of this
+      // effect share one prompt (see ensureUnlockedThisLaunch).
+      const unlocked = await ensureUnlockedThisLaunch();
+      if (!active) return;
+      if (!unlocked) {
+        // Cancelled or failed — re-prompt immediately rather than parking
+        // on a dead-end screen; the native prompt already offers its own
+        // Cancel/passcode affordances.
+        setAttempt((n) => n + 1);
+        return;
       }
-      markUnlockedThisLaunch();
 
       // Reconcile this device with whatever the account already has on the
       // server (e.g. signed in on a second device, or after a reinstall).
@@ -121,7 +121,7 @@ export default function Index() {
     return () => {
       active = false;
     };
-  }, [session, loading, attempt]);
+  }, [accountId, loading, attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 

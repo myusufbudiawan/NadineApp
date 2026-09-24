@@ -8,6 +8,7 @@ import { DatePicker } from '@/components/forms/DatePicker';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { generateReport, generateReportCsv, ReportResult } from '@/lib/api/reports';
 import { requireServerBabyId } from '@/lib/offline/serverBaby';
+import { formatMeasurement } from '@/lib/format';
 
 function formatAge(age: { weeks: number; days: number }) {
   return `${age.weeks}w ${age.days}d`;
@@ -123,7 +124,7 @@ export default function Reports() {
               <View key={m.id} style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ color: colors.text, textTransform: 'capitalize' }}>{m.metric}</Text>
                 <Text style={{ color: colors.muted }}>
-                  {m.value} {m.unit} · {new Date(m.measuredAt).toLocaleDateString()}
+                  {formatMeasurement(m.value)} {m.unit} · {new Date(m.measuredAt).toLocaleDateString()}
                 </Text>
               </View>
             ))}

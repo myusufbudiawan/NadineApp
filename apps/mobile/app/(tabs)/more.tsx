@@ -12,9 +12,11 @@ import { actualAge } from '@/lib/age';
 import { listBabies } from '@/lib/api/babies';
 import { colors, type } from '@/lib/design-system/tokens';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
+import { formatMeasurement } from '@/lib/format';
 
 const items = [
   { title: 'Profile & Baby Info', icon: 'person-circle-outline' as const, route: '/baby-setup' },
+  { title: 'Milestones', icon: 'ribbon-outline' as const, route: '/more/milestones' },
   { title: 'Reminders', icon: 'notifications-outline' as const, route: '/more/reminders' },
   {
     title: 'Customize Dashboard',
@@ -71,7 +73,7 @@ export default function More() {
   if (profile) {
     const age = actualAge(new Date(profile.dateOfBirth));
     ageWeightSummary = `${age.weeks}w ${age.days}d${
-      profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
+      profile.birthWeightKg ? ` · ${formatMeasurement(profile.birthWeightKg)} kg` : ''
     }`;
   }
 

@@ -9,25 +9,25 @@ export type GrowthReferenceStandard = {
  * growth standard, for which population) is unresolved — this labels which
  * standard *should* apply, it doesn't itself constitute clinical sign-off.
  *
- * Before the baby's due date (corrected age negative), no shaded reference
- * band is drawn at all: the preterm-appropriate chart (e.g. Fenton) has
- * proprietary underlying data not available to embed here, and no
- * substitute open-license preterm dataset was sourced in time. From the due
- * date onward, the band uses WHO Child Growth Standards (2006), boys,
- * 15th–85th percentile — see `reference-data.ts` for the actual transcribed
- * values and its own caveats (boys-only unisex stand-in, monthly anchors).
+ * Before the due date (corrected age negative) the band is an approximation
+ * of the Fenton preterm growth chart (its exact data is proprietary); from
+ * the due date onward it's WHO Child Growth Standards (2006), eased in over
+ * the first 10 corrected weeks — see `growthReferenceBandAt` in
+ * `reference-data.ts`.
  */
 export function growthReferenceFor(correctedAgeTotalDays: number): GrowthReferenceStandard {
   if (correctedAgeTotalDays < 0) {
     return {
       id: 'preterm',
-      name: 'Preterm growth reference (e.g. Fenton preterm growth chart)',
-      disclaimer: 'No preterm reference band available yet — pending a licensed dataset',
+      name: 'Preterm growth reference (approximation of the Fenton preterm growth chart)',
+      disclaimer:
+        'Shaded: 15th–85th percentile. Preterm reference (approx. Fenton) until the due date, then WHO Child Growth Standards — pending clinical review',
     };
   }
   return {
     id: 'term',
     name: 'WHO Child Growth Standards (2006)',
-    disclaimer: 'WHO Child Growth Standards, 15th–85th percentile — pending clinical review',
+    disclaimer:
+      'Shaded: 15th–85th percentile. WHO Child Growth Standards, eased in from the preterm reference over the first 10 weeks — pending clinical review',
   };
 }

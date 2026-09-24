@@ -1,3 +1,4 @@
+import { PRETERM_REFERENCE, pretermPercentiles } from './preterm-reference-data';
 import { GrowthMetric } from './types';
 
 export type ReferenceAnchor = { months: number; p15: number; p50: number; p85: number };
@@ -8,16 +9,11 @@ export type ReferenceAnchor = { months: number; p15: number; p50: number; p85: n
  * by WHO (https://www.who.int/tools/child-growth-standards), transcribed
  * from the official per-indicator percentile tables (weight-for-age,
  * length-for-age, head-circumference-for-age; "boys"/"girls, birth to 2/5
- * years"). Used only from a baby's corrected-age due date onward — see
- * `growthReferenceFor` in `./reference.ts`.
+ * years"). Used from a baby's corrected-age due date onward.
  *
- * One known simplification, not yet resolved (Open Product Decision #1): no
- * equivalent open-license preterm (pre-due-date) reference is embedded —
- * the Fenton preterm growth chart's underlying LMS parameters are
- * proprietary (available only by request to the chart's author), and a
- * from-scratch INTERGROWTH-21st preterm table wasn't sourced in time. Per
- * the user's own fallback instruction, the reference band simply doesn't
- * render before the due date rather than fabricating one.
+ * Before the due date the band comes from the approximated preterm
+ * reference in `./preterm-reference-data.ts` instead (see its caveats), and
+ * the two are blended just after it — see `growthReferenceBandAt` below.
  */
 export const WHO_REFERENCE_BOYS: Record<'weight' | 'length' | 'headCircumference', ReferenceAnchor[]> = {
   weight: [
@@ -191,43 +187,94 @@ export const WHO_REFERENCE_GIRLS: Record<'weight' | 'length' | 'headCircumferenc
 };
 
 const WEEKS_PER_MONTH = 4.348; // 365.25 / 12 / 7 — average calendar month in weeks.
+// Fenton's own approach: the preterm curves are smoothed into WHO by 50
+// weeks PMA, i.e. ~10 weeks after the due date.
+const BLEND_WEEKS_AFTER_DUE = 10;
 
 export type ReferenceBandValue = { low: number; mid: number; high: number };
 
-// Linearly interpolates the WHO table between its monthly anchors (the
-// underlying WHO curves are themselves smooth LMS splines; monthly anchors
-// interpolated linearly are a reasonable visual approximation for a small
-// mobile chart). Clamps to the first/last anchor outside the 0–24 month
-// range rather than extrapolating.
-export function whoReferenceBandAt(
+// Monotone cubic (Fritsch–Carlson) interpolation. Growth curves are smooth
+// and concave in early infancy; joining monthly WHO anchors with straight
+// lines under-reads them between anchors (by up to ~0.15 kg in the first
+// months), while a monotone cubic follows the curve without ever
+// overshooting or wiggling between points.
+function monotoneCubic(xs: number[], ys: number[], x: number): number {
+  const n = xs.length;
+  if (x <= xs[0]) return ys[0];
+  if (x >= xs[n - 1]) return ys[n - 1];
+  const slopes: number[] = [];
+  for (let i = 0; i < n - 1; i++) slopes.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  const tangents = ys.map((_, i) => {
+    if (i === 0) return slopes[0];
+    if (i === n - 1) return slopes[n - 2];
+    const a = slopes[i - 1];
+    const b = slopes[i];
+    return a * b <= 0 ? 0 : (2 * a * b) / (a + b); // harmonic mean keeps it monotone
+  });
+  let k = 0;
+  while (x > xs[k + 1]) k++;
+  const h = xs[k + 1] - xs[k];
+  const t = (x - xs[k]) / h;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  return (
+    (2 * t3 - 3 * t2 + 1) * ys[k] +
+    (t3 - 2 * t2 + t) * h * tangents[k] +
+    (-2 * t3 + 3 * t2) * ys[k + 1] +
+    (t3 - t2) * h * tangents[k + 1]
+  );
+}
+
+function whoBandAtMonths(metric: GrowthMetric, months: number, sex: 'girl' | 'boy'): ReferenceBandValue {
+  const table = (sex === 'girl' ? WHO_REFERENCE_GIRLS : WHO_REFERENCE_BOYS)[metric];
+  const xs = table.map((a) => a.months);
+  return {
+    low: monotoneCubic(xs, table.map((a) => a.p15), months),
+    mid: monotoneCubic(xs, table.map((a) => a.p50), months),
+    high: monotoneCubic(xs, table.map((a) => a.p85), months),
+  };
+}
+
+function pretermBandAt(
+  metric: GrowthMetric,
+  pmaWeeks: number,
+  sex: 'girl' | 'boy',
+): ReferenceBandValue | undefined {
+  const table = PRETERM_REFERENCE[sex][metric];
+  if (pmaWeeks < table[0].pmaWeeks) return undefined; // below the earliest viable gestation charted
+  const median = monotoneCubic(
+    table.map((a) => a.pmaWeeks),
+    table.map((a) => a.median),
+    pmaWeeks,
+  );
+  return pretermPercentiles(metric, pmaWeeks, median);
+}
+
+// The shaded 15th–85th band at a given corrected age, spanning both sides
+// of the due date:
+// - before it, the preterm reference (preterm-reference-data.ts) by PMA;
+// - after it, WHO — shifted by the preterm/WHO gap at the due date and
+//   easing that shift out over the next 10 weeks, so the band is continuous
+//   instead of stepping at 0 (the preterm curve, built from babies still
+//   growing toward term, sits slightly above WHO's newborn values there).
+// Clamps to the last WHO anchor past 24 months rather than extrapolating.
+export function growthReferenceBandAt(
   metric: GrowthMetric,
   correctedAgeWeeks: number,
   sex: 'girl' | 'boy',
+  fullTermWeeks: number,
 ): ReferenceBandValue | undefined {
-  if (correctedAgeWeeks < 0) return undefined; // no due-date-and-earlier reference (see module doc)
-  const table = (sex === 'girl' ? WHO_REFERENCE_GIRLS : WHO_REFERENCE_BOYS)[metric];
-  const months = correctedAgeWeeks / WEEKS_PER_MONTH;
-
-  if (months <= table[0].months) {
-    const a = table[0];
-    return { low: a.p15, mid: a.p50, high: a.p85 };
+  if (correctedAgeWeeks < 0) {
+    return pretermBandAt(metric, fullTermWeeks + correctedAgeWeeks, sex);
   }
-  const last = table[table.length - 1];
-  if (months >= last.months) {
-    return { low: last.p15, mid: last.p50, high: last.p85 };
-  }
-
-  for (let i = 0; i < table.length - 1; i++) {
-    const a = table[i];
-    const b = table[i + 1];
-    if (months >= a.months && months <= b.months) {
-      const t = (months - a.months) / (b.months - a.months);
-      return {
-        low: a.p15 + (b.p15 - a.p15) * t,
-        mid: a.p50 + (b.p50 - a.p50) * t,
-        high: a.p85 + (b.p85 - a.p85) * t,
-      };
-    }
-  }
-  return undefined;
+  const who = whoBandAtMonths(metric, correctedAgeWeeks / WEEKS_PER_MONTH, sex);
+  const atDue = pretermBandAt(metric, fullTermWeeks, sex);
+  const fade = Math.max(0, 1 - correctedAgeWeeks / BLEND_WEEKS_AFTER_DUE);
+  if (!atDue || fade === 0) return who;
+  const whoAtDue = whoBandAtMonths(metric, 0, sex);
+  return {
+    low: who.low + (atDue.low - whoAtDue.low) * fade,
+    mid: who.mid + (atDue.mid - whoAtDue.mid) * fade,
+    high: who.high + (atDue.high - whoAtDue.high) * fade,
+  };
 }
