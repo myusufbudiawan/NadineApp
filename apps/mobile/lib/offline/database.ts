@@ -42,7 +42,9 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
     CREATE TABLE IF NOT EXISTS growth_measurements (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL, unit TEXT NOT NULL, measured_at TEXT NOT NULL, created_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS growth_measurements_baby_metric_idx ON growth_measurements (baby_id, metric, measured_at);
     CREATE TABLE IF NOT EXISTS reminders (id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, type TEXT NOT NULL, title TEXT NOT NULL, time_of_day TEXT NOT NULL, days_of_week TEXT NOT NULL, timezone TEXT NOT NULL, enabled INTEGER NOT NULL, status TEXT NOT NULL, snoozed_until TEXT, last_completed_at TEXT, notification_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
-    CREATE INDEX IF NOT EXISTS reminders_baby_idx ON reminders (baby_id);`,
+    CREATE INDEX IF NOT EXISTS reminders_baby_idx ON reminders (baby_id);
+    CREATE TABLE IF NOT EXISTS milestones (milestone_id TEXT PRIMARY KEY NOT NULL, baby_id TEXT NOT NULL, achieved_at TEXT NOT NULL, celebrated INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
+    CREATE INDEX IF NOT EXISTS milestones_baby_idx ON milestones (baby_id);`,
   );
 
   // Phase 5 additions — backfilled onto any pre-existing install (the two
@@ -553,4 +555,66 @@ export async function getLatestCareEventsByType(babyId: string) {
     babyId,
     babyId,
   );
+}
+
+export type MilestoneRow = {
+  milestone_id: string;
+  baby_id: string;
+  achieved_at: string;
+  celebrated: number;
+  updated_at: string;
+};
+
+export async function listMilestones(babyId: string) {
+  const database = await getDatabase();
+  return database.getAllAsync<MilestoneRow>(
+    'SELECT * FROM milestones WHERE baby_id = ?',
+    babyId,
+  );
+}
+
+export async function upsertMilestone(row: {
+  milestoneId: string;
+  babyId: string;
+  achievedAt: string;
+  celebrated: boolean;
+  updatedAt?: string;
+}) {
+  const database = await getDatabase();
+  await database.runAsync(
+    'INSERT OR REPLACE INTO milestones (milestone_id, baby_id, achieved_at, celebrated, updated_at) VALUES (?, ?, ?, ?, ?)',
+    row.milestoneId,
+    row.babyId,
+    row.achievedAt,
+    row.celebrated ? 1 : 0,
+    row.updatedAt ?? new Date().toISOString(),
+  );
+}
+
+// Cross-device pull (hydrate.ts): only overwrites a local row when the
+// server's copy is actually newer, so pulling never clobbers a local mark
+// that hasn't finished syncing out yet. Returns whether this device didn't
+// already know about the row at all (as opposed to just refreshing a stale
+// copy) — hydrate.ts uses that to decide whether to play the celebration
+// for a milestone a different caregiver's device marked first.
+export async function upsertMilestoneIfNewer(row: {
+  milestoneId: string;
+  babyId: string;
+  achievedAt: string;
+  celebrated: boolean;
+  updatedAt: string;
+}): Promise<{ wasNew: boolean }> {
+  const database = await getDatabase();
+  const existing = await database.getFirstAsync<{ updated_at: string }>(
+    'SELECT updated_at FROM milestones WHERE milestone_id = ?',
+    row.milestoneId,
+  );
+  if (existing && existing.updated_at >= row.updatedAt) return { wasNew: false };
+  await upsertMilestone(row);
+  return { wasNew: !existing };
+}
+
+export async function deleteMilestone(milestoneId: string) {
+  const database = await getDatabase();
+  await database.runAsync('DELETE FROM milestones WHERE milestone_id = ?', milestoneId);
 }

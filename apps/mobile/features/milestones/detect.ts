@@ -10,7 +10,7 @@ const LB_PER_KG = 2.20462;
 const ML_PER_OZ = 29.5735;
 const DAY_MS = 86_400_000;
 const REGAIN_EARLIEST_DAYS = 3;
-const CELEBRATE_WITHIN_DAYS = 7;
+export const CELEBRATE_WITHIN_DAYS = 7;
 // Typical full-term intake once feeding is established: ~150 ml/kg/day
 // (NEEDS-CLINICAL-REVIEW: many units target 150–180 for preterm babies).
 export const TERM_FEEDING_ML_PER_KG_PER_DAY = 150;
