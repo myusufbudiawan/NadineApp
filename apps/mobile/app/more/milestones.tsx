@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePicker } from '@/components/forms/DatePicker';
 import { Button } from '@/components/ui/Button';
@@ -129,7 +129,7 @@ export default function Milestones() {
           </Text>
           <Button
             style={{ marginTop: space.sm, minWidth: 200 }}
-            onPress={() => (homeRecord ? requestCelebration(homecoming.id) : setMarking(homecoming))}
+            onPress={() => (homeRecord ? onPressAchieved(homecoming) : setMarking(homecoming))}
           >
             {homeRecord ? 'Relive homecoming' : 'We’re going home'}
           </Button>
@@ -289,14 +289,30 @@ function MarkSheet({
     return d;
   };
 
+  // The backdrop dim and the sheet are siblings inside the same Modal, so
+  // RN's built-in "slide" animationType slides both together — the dim
+  // visibly travels up from the bottom instead of just fading in. Animate
+  // them separately instead: backdrop fades, sheet slides.
+  const backdrop = useRef(new Animated.Value(0)).current;
+  const sheet = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!milestone) return;
+    backdrop.setValue(0);
+    sheet.setValue(0);
+    Animated.parallel([
+      Animated.timing(backdrop, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.spring(sheet, { toValue: 1, friction: 9, tension: 60, useNativeDriver: true }),
+    ]).start();
+  }, [milestone, backdrop, sheet]);
+
   return (
-    <Modal visible={Boolean(milestone)} transparent animationType="slide" onRequestClose={onCancel}>
-      <Pressable
-        accessibilityLabel="Close"
-        onPress={onCancel}
-        style={{ flex: 1, backgroundColor: 'rgba(32,31,29,0.35)' }}
-      />
-      <View
+    <Modal visible={Boolean(milestone)} transparent animationType="none" onRequestClose={onCancel}>
+      <Animated.View
+        style={{ flex: 1, backgroundColor: 'rgba(32,31,29,0.35)', opacity: backdrop }}
+      >
+        <Pressable accessibilityLabel="Close" onPress={onCancel} style={{ flex: 1 }} />
+      </Animated.View>
+      <Animated.View
         style={{
           backgroundColor: colors.surface,
           borderTopLeftRadius: radius.lg * 2,
@@ -304,6 +320,9 @@ function MarkSheet({
           padding: space.xl,
           paddingBottom: insets.bottom + space.xl,
           gap: space.lg,
+          transform: [
+            { translateY: sheet.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) },
+          ],
         }}
       >
         {milestone && (
@@ -324,7 +343,7 @@ function MarkSheet({
             </Button>
           </>
         )}
-      </View>
+      </Animated.View>
     </Modal>
   );
 }

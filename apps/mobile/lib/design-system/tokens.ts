@@ -2,7 +2,7 @@
 // a warm near-white ground, and a single gold accent applied as stroke/text
 // rather than fill. See the imported Claude Design system for the full spec.
 export const colors = {
-  canvas: '#f3f2f2',
+  canvas: '#f8f7f6',
   surface: '#faf8f6',
   text: '#201f1d',
   muted: '#7d7979',
@@ -36,8 +36,8 @@ export const colors = {
 // Screen background gradient — the design tints the whole app subtly by the
 // baby's sex (a soft blush or a soft blue) fading into the same warm ground.
 export const screenGradient = {
-  girl: ['#fbe6e0', '#f9f0ec', '#faf8f6'] as const,
-  boy: ['#e2ecf6', '#f6f2ee', '#faf8f6'] as const,
+  girl: ['#f6c3b6', '#f9ddd1', '#faf8f6'] as const,
+  boy: ['#b9d5f0', '#dbe9f6', '#faf8f6'] as const,
   locations: [0, 0.32, 0.6] as const,
 };
 export const space = { xs: 5, sm: 9, md: 14, lg: 18, xl: 28, xxl: 37 } as const;
