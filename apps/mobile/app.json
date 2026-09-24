@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
-    "backgroundColor": "#f3f2f2",
+    "backgroundColor": "#f8f7f6",
     "plugins": [
       "expo-router",
       "expo-secure-store",
@@ -20,9 +20,10 @@
         {
           "image": "./assets/icon.png",
           "imageWidth": 160,
-          "backgroundColor": "#f3f2f2"
+          "backgroundColor": "#f8f7f6"
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true
@@ -30,7 +31,7 @@
     "ios": {
       "bundleIdentifier": "com.anonymous.preemietrack",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to unlock PreemieTrack."
+        "NSFaceIDUsageDescription": "Use biometric to unlock PreemieTrack."
       }
     },
     "android": {

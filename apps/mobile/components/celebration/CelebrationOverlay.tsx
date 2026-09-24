@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
+import { createAudioPlayer } from 'expo-audio';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BabyProfile } from '@/features/baby-profile/types';
+import { milestoneSounds } from '@/features/milestones/sounds';
 import { daysSinceBirth, MilestoneDefinition, pronounsFor } from '@/features/milestones/types';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { formatMeasurement } from '@/lib/format';
@@ -14,11 +16,11 @@ import { Confetti } from './Confetti';
 const palettes = {
   girl: {
     confetti: ['#e3a19b', '#f2c9c0', '#b68235', '#dcb46c', '#f7e6d4', '#c9807a'],
-    ground: ['#fbe3dc', '#fbefe9', '#faf8f6'] as const,
+    ground: ['#f4b3a3', '#f8d9cc', '#faf8f6'] as const,
   },
   boy: {
     confetti: ['#8fb2d8', '#c4d8ed', '#b68235', '#dcb46c', '#f7e6d4', '#6f93bd'],
-    ground: ['#dde9f5', '#f1f1f1', '#faf8f6'] as const,
+    ground: ['#a9cbee', '#d6e6f5', '#faf8f6'] as const,
   },
 } as const;
 
@@ -47,6 +49,12 @@ export function CelebrationOverlay({
   const medallion = useRef(new Animated.Value(0)).current;
   const content = useRef(new Animated.Value(0)).current;
   const halo = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const player = createAudioPlayer(milestoneSounds[milestone.id]);
+    player.play();
+    return () => player.release();
+  }, [milestone.id]);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => {});
