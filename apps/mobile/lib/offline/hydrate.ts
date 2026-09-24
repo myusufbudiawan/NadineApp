@@ -18,24 +18,11 @@ const DAY_MS = 86_400_000;
 // a listCareEventsSince for the local side) if a baby's history grows large
 // enough that this becomes slow on every login.
 export async function hydrateFromServer(serverBabyId: string): Promise<void> {
-  // Milestones fetched separately from events/growth (not in the same
-  // Promise.all) and never let a failure here block the other two: on a
-  // server that hasn't run the milestones migration yet (or is otherwise
-  // having trouble with just that endpoint), a fast-failing Promise.all
-  // would have surfaced as "existing data fails to load" for every account
-  // with history, even though events/growth were fetched successfully —
-  // hydration is the *only* way pre-existing history reaches a fresh
-  // install/reinstall, so it can't be all-or-nothing across domains.
-  const [events, growth] = await Promise.all([
+  const [events, growth, milestones] = await Promise.all([
     listServerCareEvents(serverBabyId),
     listServerGrowth(serverBabyId),
+    listServerMilestones(serverBabyId),
   ]);
-  let milestones: Awaited<ReturnType<typeof listServerMilestones>> = [];
-  try {
-    milestones = await listServerMilestones(serverBabyId);
-  } catch (err) {
-    console.warn('hydrate: fetching milestones failed, continuing without them', err);
-  }
 
   for (const event of events) {
     // Care-event creation now always echoes the client's original id back
