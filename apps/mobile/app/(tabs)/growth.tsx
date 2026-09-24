@@ -13,12 +13,13 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { growthReferenceFor } from '@/features/growth/reference';
-import { whoReferenceBandAt } from '@/features/growth/reference-data';
+import { growthReferenceBandAt } from '@/features/growth/reference-data';
 import { computeGrowthStats } from '@/features/growth/stats';
 import { loadMeasurementsForMetric } from '@/features/growth/storage';
 import { growthMetricLabels, GrowthMetric, GrowthMeasurement } from '@/features/growth/types';
 import { actualAge, correctedAge, formatAgeDetailed } from '@/lib/age';
 import { colors, type } from '@/lib/design-system/tokens';
+import { formatMeasurement } from '@/lib/format';
 
 const metricOptions: GrowthMetric[] = ['weight', 'length', 'headCircumference'];
 
@@ -139,15 +140,27 @@ export default function Growth() {
         emptyMessage={`No ${growthMetricLabels[metric].toLowerCase()} measurements yet`}
         referenceLabel={referenceStandard?.disclaimer}
         referenceBandAt={(ageWeeks) =>
-          profile ? whoReferenceBandAt(metric, ageWeeks, profile.sex) : undefined
+          profile
+            ? growthReferenceBandAt(metric, ageWeeks, profile.sex, profile.fullTermReferenceWeeks)
+            : undefined
         }
         yStep={metric === 'weight' ? 0.5 : undefined}
+        // From birth, so a preterm baby sees the whole reference band from
+        // where they started up to the due date and beyond.
+        startAgeWeeks={
+          profile
+            ? (profile.gestationalWeeks * 7 +
+                profile.gestationalDays -
+                profile.fullTermReferenceWeeks * 7) /
+              7
+            : undefined
+        }
       />
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Card style={{ flex: 1 }}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>Latest</Text>
           <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text }}>
-            {stats?.latest ? `${stats.latest.value} ${stats.latest.unit}` : '—'}
+            {stats?.latest ? `${formatMeasurement(stats.latest.value)} ${stats.latest.unit}` : '—'}
           </Text>
           <Text style={{ color: colors.green, fontSize: 12, marginTop: 8 }}>
             {stats?.deltaVsPreviousCaption ?? (stats?.latest ? 'First reading' : 'No data yet')}
@@ -158,7 +171,7 @@ export default function Growth() {
             {metric === 'weight' ? 'Birth weight' : 'Latest vs 7 days'}
           </Text>
           <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text }}>
-            {metric === 'weight' && birthValue ? `${birthValue.value} ${birthValue.unit}` : stats?.delta7dCaption ?? '—'}
+            {metric === 'weight' && birthValue ? `${formatMeasurement(birthValue.value)} ${birthValue.unit}` : stats?.delta7dCaption ?? '—'}
           </Text>
           {metric === 'weight' ? (
             <Text style={{ color: colors.violet, fontSize: 12, marginTop: 8 }}>
@@ -232,7 +245,7 @@ export default function Growth() {
                   {pmaAge.weeks}w {pmaAge.days}d
                 </Text>
                 <Text style={[readingCellStyle, { flex: 1, fontFamily: type.fontBodyMedium }]}>
-                  {m.value} {m.unit}
+                  {formatMeasurement(m.value)} {m.unit}
                 </Text>
                 <Text style={[readingCellStyle, { width: 50, textAlign: 'right', color: colors.accentStrong }]}>
                   {delta === undefined ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`}

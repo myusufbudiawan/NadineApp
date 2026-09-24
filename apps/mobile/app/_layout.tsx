@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/lib/design-system/tokens';
 import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
+import { CelebrationHost } from '@/components/celebration/CelebrationHost';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
 export default function RootLayout() {
@@ -69,8 +70,11 @@ export default function RootLayout() {
         <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
         <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
         <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
+        <Stack.Screen name="more/milestones" options={{ presentation: 'card' }} />
       </Stack>
       <KeyboardDoneBar />
+      {/* Milestone celebrations play over the whole app, whatever screen is up. */}
+      <CelebrationHost />
     </SafeAreaProvider>
   );
 }

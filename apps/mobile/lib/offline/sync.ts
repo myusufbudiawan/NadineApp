@@ -1,7 +1,9 @@
 import * as Crypto from 'expo-crypto';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { createBaby, updateBaby } from '@/lib/api/babies';
+import { deleteServerMilestone, upsertServerMilestone } from '@/lib/api/milestones';
 import { submitMutations, SyncMutationResult } from '@/lib/api/sync';
+import { MilestoneDeleteMutationPayload, MilestoneMutationPayload } from '@/features/milestones/storage';
 import {
   listPendingMutations,
   markMutationFailed,
@@ -58,13 +60,21 @@ async function runSyncOnce(): Promise<SyncSummary> {
 }
 
 async function syncBatch(rows: MutationQueueRow[], summary: SyncSummary) {
-  // baby-profile rows don't go through /v1/sync (that endpoint only knows
-  // care-event-shaped mutations) — they hit the same POST/PATCH /v1/babies
-  // endpoints baby-setup.tsx calls directly on the happy path.
+  // baby-profile and milestone rows don't go through /v1/sync (that
+  // endpoint only knows care-event-shaped mutations) — they hit their own
+  // domain endpoints directly, the way baby-setup.tsx does on the happy path.
   const babyProfileRows = rows.filter((row) => row.entity_type === 'baby-profile');
-  const batch = rows.filter((row) => row.entity_type !== 'baby-profile');
+  const milestoneRows = rows.filter(
+    (row) => row.entity_type === 'milestone' || row.entity_type === 'milestone-delete',
+  );
+  const batch = rows.filter(
+    (row) => !babyProfileRows.includes(row) && !milestoneRows.includes(row),
+  );
   for (const row of babyProfileRows) {
     await syncBabyProfileRow(row, summary);
+  }
+  for (const row of milestoneRows) {
+    await syncMilestoneRow(row, summary);
   }
   if (batch.length === 0) return;
 
@@ -121,6 +131,35 @@ async function syncBabyProfileRow(row: MutationQueueRow, summary: SyncSummary) {
     }
     const { data } = await supabase.auth.getSession();
     if (data.session) await setLocalDataOwner(data.session.user.id);
+    await markMutationSynced(row.id);
+    summary.applied += 1;
+  } catch (error) {
+    await failRow(row, error instanceof Error ? error.message : 'Network error');
+    summary.failed += 1;
+  }
+}
+
+async function syncMilestoneRow(row: MutationQueueRow, summary: SyncSummary) {
+  try {
+    const serverBabyId = await getServerBabyId();
+    if (!serverBabyId) {
+      // Baby hasn't synced to the server yet — there's no id to attach this
+      // milestone to. Back off and retry rather than failing permanently;
+      // the baby-profile row ahead of it in the queue will supply one soon.
+      throw new Error('Baby profile has not synced yet');
+    }
+    if (row.entity_type === 'milestone') {
+      const payload = JSON.parse(row.payload) as MilestoneMutationPayload;
+      await upsertServerMilestone(
+        serverBabyId,
+        payload.milestoneId,
+        payload.achievedAt,
+        payload.celebrated,
+      );
+    } else {
+      const payload = JSON.parse(row.payload) as MilestoneDeleteMutationPayload;
+      await deleteServerMilestone(serverBabyId, payload.milestoneId);
+    }
     await markMutationSynced(row.id);
     summary.applied += 1;
   } catch (error) {

@@ -10,8 +10,9 @@ function decimalsForStep(step: number) {
   return dot === -1 ? 0 : text.length - dot - 1;
 }
 
-function roundToStep(value: number, step: number) {
-  const decimals = decimalsForStep(step);
+// Rounds to the display precision, not just the step's — a 0.1 kg step with
+// 2 display decimals must still keep a typed 2.35 as 2.35, not 2.4.
+function roundToPrecision(value: number, decimals: number) {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
 }
@@ -40,7 +41,7 @@ export function NumericStepper({
   rangeMin?: number;
   rangeMax?: number;
 }) {
-  const decimals = decimalsProp ?? decimalsForStep(step);
+  const decimals = Math.max(decimalsProp ?? 0, decimalsForStep(step));
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
 
@@ -54,7 +55,7 @@ export function NumericStepper({
     onChangeRef.current = onChange;
   }, [onChange]);
 
-  const commit = (next: number) => onChangeRef.current(Math.max(min, roundToStep(next, step)));
+  const commit = (next: number) => onChangeRef.current(Math.max(min, roundToPrecision(next, decimals)));
 
   const panResponder = useRef(
     PanResponder.create({

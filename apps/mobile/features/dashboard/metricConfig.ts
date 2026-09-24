@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CareEventType } from '@/features/care-events/types';
 import { TodaySummary } from '@/features/care-events/todaySummary';
+import { formatMeasurement } from '@/lib/format';
 
 function formatDuration(totalMinutes: number) {
   const h = Math.floor(totalMinutes / 60);
@@ -34,7 +35,7 @@ export function getDashboardMetricView(
         icon: 'scale-outline',
         tone: 'pink',
         title: 'Weight',
-        value: summary?.weight.hasAny ? String(summary.weight.value) : '—',
+        value: summary?.weight.hasAny ? formatMeasurement(summary.weight.value!) : '—',
         unit: summary?.weight.hasAny ? summary?.weight.unit : undefined,
         caption: summary?.weight.hasAny ? summary!.weight.deltaCaption! : 'No weight logged yet',
         route: '/track/add-weight',

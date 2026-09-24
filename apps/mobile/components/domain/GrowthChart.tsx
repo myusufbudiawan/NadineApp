@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, Text, View } from 'react-native';
 import { colors, type } from '@/lib/design-system/tokens';
+import { formatMeasurement } from '@/lib/format';
 
 export type GrowthChartPoint = { ageWeeks: number; value: number };
 export type GrowthChartBand = { low: number; mid: number; high: number };
@@ -69,6 +70,7 @@ export function GrowthChart({
   referenceLabel,
   referenceBandAt,
   yStep,
+  startAgeWeeks,
 }: {
   points: GrowthChartPoint[];
   seriesLabel: string;
@@ -78,6 +80,8 @@ export function GrowthChart({
   referenceBandAt?: (ageWeeks: number) => GrowthChartBand | undefined;
   /** Fixed y-axis tick spacing (e.g. 0.5 for kg) instead of the auto-picked "nice" step. */
   yStep?: number;
+  /** Earliest corrected age the x-axis should reach even without a reading there (e.g. birth). */
+  startAgeWeeks?: number;
 }) {
   const [plotWidth, setPlotWidth] = useState(0);
   const height = 180;
@@ -103,7 +107,7 @@ export function GrowthChart({
 
   const xValues = points.map((p) => p.ageWeeks);
   const yValues = points.map((p) => p.value);
-  const rawXMin = Math.min(0, ...xValues);
+  const rawXMin = Math.min(0, startAgeWeeks ?? 0, ...xValues);
   const rawXMax = Math.max(10, ...xValues);
 
   // Sample the band across the x-range up front so its extent can widen the
@@ -155,8 +159,8 @@ export function GrowthChart({
   const last = points[points.length - 1];
   const rangeDescription =
     points.length === 1
-      ? `one reading of ${first.value} ${unit} at ${formatWeeksForLabel(first.ageWeeks)}`
-      : `${points.length} readings from ${first.value} to ${last.value} ${unit}, spanning ${formatWeeksForLabel(first.ageWeeks)} to ${formatWeeksForLabel(last.ageWeeks)}`;
+      ? `one reading of ${formatMeasurement(first.value)} ${unit} at ${formatWeeksForLabel(first.ageWeeks)}`
+      : `${points.length} readings from ${formatMeasurement(first.value)} to ${formatMeasurement(last.value)} ${unit}, spanning ${formatWeeksForLabel(first.ageWeeks)} to ${formatWeeksForLabel(last.ageWeeks)}`;
   const accessibilityLabel = referenceLabel
     ? `${seriesLabel} chart: ${rangeDescription}. ${referenceLabel}.`
     : `${seriesLabel} chart: ${rangeDescription}.`;
