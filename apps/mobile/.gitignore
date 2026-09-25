@@ -4,3 +4,6 @@
 
 expo-env.d.ts
 # @end expo-cli
+# Native projects are generated per variant by `expo prebuild` (see app.config.ts)
+/ios
+/android

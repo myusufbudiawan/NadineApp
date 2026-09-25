@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 
 // Caches the open+migrate *promise*, not the resolved database — every
 // screen's useFocusEffect calls getDatabase() independently (Home, Track,
@@ -73,7 +74,8 @@ export async function resetLocalData() {
      DELETE FROM sync_conflicts;
      DELETE FROM care_events;
      DELETE FROM growth_measurements;
-     DELETE FROM reminders;`,
+     DELETE FROM reminders;
+     DELETE FROM milestones;`,
   );
 }
 
@@ -110,6 +112,8 @@ export async function queueMutation(
   entityType: string,
   payload: string,
 ) {
+  // Nothing ever drains the queue in the offline-only build — don't fill it.
+  if (OFFLINE_ONLY) return;
   const database = await getDatabase();
   await database.runAsync(
     'INSERT INTO mutation_queue (id, entity_type, payload, created_at, sync_state) VALUES (?, ?, ?, ?, ?)',

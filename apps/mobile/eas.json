@@ -9,10 +9,26 @@
       "environment": "preview",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "ANDROID_ARM64_ONLY": "1"
       }
     },
     "production": {
       "environment": "production"
+    },
+    "offline-preview": {
+      "extends": "preview",
+      "env": {
+        "ANDROID_ARM64_ONLY": "1",
+        "EXPO_PUBLIC_OFFLINE_ONLY": "1"
+      }
+    },
+    "offline-production": {
+      "extends": "production",
+      "env": {
+        "EXPO_PUBLIC_OFFLINE_ONLY": "1"
+      }
     }
   }
 }

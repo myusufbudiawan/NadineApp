@@ -10,6 +10,7 @@ import { careEventRows } from '@/features/care-events/rowConfig';
 import { loadLatestCareEvents } from '@/features/care-events/storage';
 import { CareEvent, CareEventType } from '@/features/care-events/types';
 import { colors, type } from '@/lib/design-system/tokens';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 
 export default function Track() {
   const [latest, setLatest] = useState<Partial<Record<CareEventType, CareEvent>>>({});
@@ -73,7 +74,9 @@ export default function Track() {
         })}
       </View>
       <Text style={{ fontSize: 11, color: colors.faint, lineHeight: 17 }}>
-        Entries save on this device first and sync when you're back online.
+        {OFFLINE_ONLY
+          ? 'Entries are saved only on this device.'
+          : "Entries save on this device first and sync when you're back online."}
       </Text>
     </TabScreen>
   );

@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types __tests__/age.runner.ts",
+    "test": "node --experimental-strip-types __tests__/age.runner.ts && node --experimental-strip-types __tests__/backup.runner.ts",
     "build": "expo export --platform android --platform ios --no-bytecode"
   },
   "dependencies": {
@@ -23,7 +23,10 @@
     "@supabase/supabase-js": "^2.116.0",
     "expo": "~57.0.17",
     "expo-audio": "~57.0.5",
+    "expo-build-properties": "~57.0.22",
     "expo-crypto": "^57.0.2",
+    "expo-document-picker": "~57.0.2",
+    "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.3",
     "expo-image-picker": "~57.0.16",
     "expo-linear-gradient": "~57.0.1",
@@ -31,6 +34,7 @@
     "expo-notifications": "~57.0.16",
     "expo-router": "~57.0.19",
     "expo-secure-store": "~57.0.3",
+    "expo-sharing": "~57.0.22",
     "expo-splash-screen": "~57.0.8",
     "expo-sqlite": "~57.0.2",
     "expo-status-bar": "~57.0.1",

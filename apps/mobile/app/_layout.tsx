@@ -8,6 +8,7 @@ import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { CelebrationHost } from '@/components/celebration/CelebrationHost';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 export default function RootLayout() {
   // Drains the offline mutation queue on launch, on every foreground, and
   // on a background interval (Section 11 5.1) — mounted once at the root so
@@ -15,7 +16,7 @@ export default function RootLayout() {
   // now requires a signed-in account, so there's nothing to sync until
   // someone is actually logged in.
   const { session } = useAuthSession();
-  useSync(Boolean(session));
+  useSync(Boolean(session) && !OFFLINE_ONLY);
   const [fontsLoaded] = useFonts({
     CormorantGaramond_600SemiBold,
     Lora_400Regular,

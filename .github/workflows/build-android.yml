@@ -2,6 +2,12 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile
+        type: choice
+        options: [preview, offline-preview]
+        default: preview
 
 jobs:
   build:
@@ -23,15 +29,15 @@ jobs:
       - run: npm ci
         working-directory: .
       - name: Build with EAS
-        run: eas build --platform android --profile preview --non-interactive --wait --json > build.json
+        run: eas build --platform android --profile ${{ inputs.profile }} --non-interactive --wait --json > build.json
       - name: Extract artifact URL
         id: eas
         run: echo "url=$(node -p "JSON.parse(require('fs').readFileSync('build.json'))[0].artifacts.buildUrl")" >> "$GITHUB_OUTPUT"
       - name: Download APK
-        run: curl -L "${{ steps.eas.outputs.url }}" -o PreemieTrack.apk
+        run: curl -L "${{ steps.eas.outputs.url }}" -o PreemieTrack-${{ inputs.profile }}.apk
       - name: Attach to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: preemietrack-${{ github.run_number }}
-          name: PreemieTrack v${{ github.run_number }}
-          files: apps/mobile/PreemieTrack.apk
+          tag_name: preemietrack-${{ inputs.profile }}-${{ github.run_number }}
+          name: PreemieTrack ${{ inputs.profile }} v${{ github.run_number }}
+          files: apps/mobile/PreemieTrack-${{ inputs.profile }}.apk
