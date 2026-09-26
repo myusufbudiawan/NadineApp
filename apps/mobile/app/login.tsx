@@ -122,7 +122,7 @@ export default function Login() {
 
       {canBiometricSignIn && mode === 'signin' && (
         <Button variant="secondary" onPress={signInWithBiometrics}>
-          Sign in with Face ID
+          Sign in with biometric
         </Button>
       )}
 
