@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/lib/design-system/tokens';
 import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { CelebrationHost } from '@/components/celebration/CelebrationHost';
+import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
 export default function RootLayout() {
@@ -26,55 +27,57 @@ export default function RootLayout() {
   }
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="baby-setup" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="track/add-feeding"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-weight"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-diaper"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-sleep"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-temperature"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-medication"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-note"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/add-growth"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="track/history/[type]"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
-        <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
-        <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
-        <Stack.Screen name="more/milestones" options={{ presentation: 'card' }} />
-      </Stack>
-      <KeyboardDoneBar />
-      {/* Milestone celebrations play over the whole app, whatever screen is up. */}
-      <CelebrationHost />
+      <PhotoBlurProvider>
+        <StatusBar style="dark" />
+        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="baby-setup" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="track/add-feeding"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-weight"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-diaper"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-sleep"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-temperature"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-medication"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-note"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/add-growth"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen
+            name="track/history/[type]"
+            options={{ presentation: 'card' }}
+          />
+          <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
+          <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
+          <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
+          <Stack.Screen name="more/milestones" options={{ presentation: 'card' }} />
+        </Stack>
+        <KeyboardDoneBar />
+        {/* Milestone celebrations play over the whole app, whatever screen is up. */}
+        <CelebrationHost />
+      </PhotoBlurProvider>
     </SafeAreaProvider>
   );
 }

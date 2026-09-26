@@ -23,7 +23,45 @@
           "backgroundColor": "#f8f7f6"
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./assets/fonts/CormorantGaramond_600SemiBold.ttf",
+            "./assets/fonts/Lora_400Regular.ttf",
+            "./assets/fonts/Lora_600SemiBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "BabyStatusSquareWidget",
+              "label": "Baby status (square)",
+              "description": "A quick snapshot of age, weight and today's feeds.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "300dp",
+              "maxResizeHeight": "300dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "BabyStatusBannerWidget",
+              "label": "Baby status (banner)",
+              "description": "A wide snapshot bar with quick-add for weight and feeding.",
+              "minWidth": "250dp",
+              "minHeight": "100dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "400dp",
+              "maxResizeHeight": "150dp",
+              "resizeMode": "horizontal",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
