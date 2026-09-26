@@ -10,6 +10,7 @@ import { ensureUnlockedThisLaunch } from '@/lib/auth/biometric';
 import { hasOnboarded } from '@/lib/auth/onboardingState';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { resetLocalData, saveProfile } from '@/lib/offline/database';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
 import {
   clearServerBabyId,
@@ -29,6 +30,26 @@ export default function Index() {
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (OFFLINE_ONLY) {
+      // No account and no server: onboarding once, then the device's own
+      // biometric lock, then straight to whatever is stored locally.
+      let active = true;
+      (async () => {
+        if (!(await hasOnboarded())) {
+          if (active) setTarget('/onboarding');
+          return;
+        }
+        if (!(await ensureUnlockedThisLaunch())) {
+          if (active) setAttempt((n) => n + 1);
+          return;
+        }
+        const local = await loadBabyProfile(LOCAL_BABY_ID);
+        if (active) setTarget(local ? '/(tabs)/home' : '/baby-setup');
+      })();
+      return () => {
+        active = false;
+      };
+    }
     if (loading) return;
     if (!accountId) {
       hasOnboarded().then((onboarded) => {

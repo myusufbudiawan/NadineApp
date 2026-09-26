@@ -29,6 +29,7 @@ import { saveProfile } from '@/lib/offline/database';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
 import { getServerBabyId } from '@/lib/offline/serverBaby';
 import { runSync } from '@/lib/offline/sync';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import { colors, type } from '@/lib/design-system/tokens';
 import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
@@ -145,6 +146,12 @@ export default function Home() {
   const onPullToRefresh = useCallback(async () => {
     setRefreshing(true);
     setSyncStatus(undefined);
+    if (OFFLINE_ONLY) {
+      // Nothing to sync — just re-read local data.
+      await refresh();
+      setRefreshing(false);
+      return;
+    }
     try {
       const summary = await runSync();
       const serverBabyId = await getServerBabyId();
@@ -167,10 +174,22 @@ export default function Home() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      // The offline build stores the photo inline in the profile row (and
+      // so in backups) — keep it small.
+      quality: OFFLINE_ONLY ? 0.5 : 0.8,
       base64: true,
     });
     if (result.canceled || !result.assets[0]?.base64) return;
+
+    if (OFFLINE_ONLY) {
+      const next: BabyProfile = {
+        ...profile,
+        photoUri: `data:image/jpeg;base64,${result.assets[0].base64}`,
+      };
+      await saveProfile(next.id, JSON.stringify(next));
+      setProfile(next);
+      return;
+    }
 
     const serverBabyId = await getServerBabyId();
     if (!serverBabyId) {

@@ -1,6 +1,0 @@
-<resources>
-  <string name="app_name">PreemieTrack</string>
-  <string name="widget_babystatussquarewidget_description" translatable="false">A quick snapshot of age, weight and today\'s feeds.</string>
-  <string name="widget_babystatusbannerwidget_description" translatable="false">A wide snapshot bar with quick-add for weight and feeding.</string>
-  <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
-</resources>

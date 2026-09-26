@@ -78,6 +78,21 @@ async function rescheduleNotification(
   await updateReminderRow(id, { notificationId: notificationId ?? null });
 }
 
+// After a backup import: notification ids from another device are
+// meaningless here, so schedule a fresh one for every enabled reminder.
+export async function rescheduleEnabledReminders(babyId: string) {
+  for (const row of await listReminderRows(babyId)) {
+    if (row.enabled !== 1) continue;
+    await rescheduleNotification(
+      row.id,
+      row.title,
+      row.time_of_day,
+      JSON.parse(row.days_of_week),
+      row.timezone,
+    );
+  }
+}
+
 export async function createReminder(input: CreateReminderInput): Promise<string> {
   const id = Crypto.randomUUID();
   await insertReminder({ ...input, id, enabled: true });

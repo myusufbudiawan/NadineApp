@@ -21,6 +21,8 @@ import {
   requestAccountDeletion,
 } from '@/lib/api/privacy';
 import { supabase } from '@/lib/supabase/client';
+import { eraseLocalData, exportBackup, pickAndImportBackup } from '@/lib/offline/backup';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import appConfig from '../../app.json';
 
 export default function Settings() {
@@ -35,11 +37,13 @@ export default function Settings() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      listDeletionRequests()
-        .then((requests) => {
-          if (active) setPendingDeletion(requests.find((r) => r.status === 'pending'));
-        })
-        .catch(() => undefined);
+      if (!OFFLINE_ONLY) {
+        listDeletionRequests()
+          .then((requests) => {
+            if (active) setPendingDeletion(requests.find((r) => r.status === 'pending'));
+          })
+          .catch(() => undefined);
+      }
       loadBabyProfile(LOCAL_BABY_ID).then((p) => {
         if (active) setProfile(p);
       });
@@ -56,29 +60,31 @@ export default function Settings() {
     <FormScreen>
       <ScreenHeader title="Settings" back />
 
-      <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
-          Account
-        </Text>
-        <Text style={{ color: colors.muted, fontSize: type.caption }}>
-          {session?.user.email ?? 'Not signed in'}
-        </Text>
-        <Button
-          variant="secondary"
-          onPress={() =>
-            confirmDestructive(
-              'Log out?',
-              "You'll need to sign back in to access your baby's data on this device.",
-              async () => {
-                await supabase.auth.signOut();
-                router.replace('/login');
-              },
-            )
-          }
-        >
-          Log out
-        </Button>
-      </Card>
+      {!OFFLINE_ONLY && (
+        <Card style={{ gap: space.sm }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+            Account
+          </Text>
+          <Text style={{ color: colors.muted, fontSize: type.caption }}>
+            {session?.user.email ?? 'Not signed in'}
+          </Text>
+          <Button
+            variant="secondary"
+            onPress={() =>
+              confirmDestructive(
+                'Log out?',
+                "You'll need to sign back in to access your baby's data on this device.",
+                async () => {
+                  await supabase.auth.signOut();
+                  router.replace('/login');
+                },
+              )
+            }
+          >
+            Log out
+          </Button>
+        </Card>
+      )}
 
       <Card style={{ gap: space.sm }}>
         <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
@@ -149,94 +155,137 @@ export default function Settings() {
         </Button>
       </Card>
 
-      <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
-          Your data
-        </Text>
-        <Text style={{ color: colors.muted, fontSize: type.caption }}>
-          Download a copy of everything stored for this account — babies, care events,
-          measurements, reminders, and sharing history.
-        </Text>
-        <Button
-          disabled={exporting}
-          onPress={async () => {
-            setExporting(true);
-            try {
-              const data = await exportAccountData();
-              await Share.share({
-                message: JSON.stringify(data, null, 2),
-                title: 'PreemieTrack account export',
-              });
-            } catch (err) {
-              Alert.alert(
-                'Could not export your data',
-                err instanceof ApiError ? err.message : 'Something went wrong.',
-              );
-            } finally {
-              setExporting(false);
-            }
-          }}
-        >
-          {exporting ? 'Preparing export…' : 'Export my data'}
-        </Button>
-      </Card>
-
-      <Card style={{ gap: space.sm }}>
-        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
-          Account deletion
-        </Text>
-        {pendingDeletion ? (
-          <>
-            <Text style={{ color: colors.muted, fontSize: type.caption }}>
-              A deletion request is pending review, requested{' '}
-              {new Date(pendingDeletion.requestedAt).toLocaleDateString()}. Final data-retention
-              timing is still being finalized — you can cancel any time before it's processed.
-            </Text>
-            <Button
-              variant="destructive"
-              onPress={async () => {
-                await cancelAccountDeletion(pendingDeletion.id);
-                setPendingDeletion(undefined);
-              }}
-            >
-              Cancel deletion request
-            </Button>
-          </>
-        ) : (
-          <>
-            <Text style={{ color: colors.muted, fontSize: type.caption }}>
-              Request permanent deletion of this account and its data. A team member reviews
-              every request before anything is removed.
-            </Text>
-            <Button
-              variant="destructive"
-              disabled={requestingDeletion}
-              onPress={() =>
-                confirmDestructive(
-                  'Request account deletion?',
-                  "This starts the deletion review process. You can cancel it any time before it's processed.",
-                  async () => {
-                    setRequestingDeletion(true);
-                    try {
-                      const request = await requestAccountDeletion();
-                      setPendingDeletion(request);
-                    } catch (err) {
-                      Alert.alert(
-                        'Could not submit request',
-                        err instanceof ApiError ? err.message : 'Something went wrong.',
-                      );
-                    } finally {
-                      setRequestingDeletion(false);
-                    }
-                  },
-                )
+      {OFFLINE_ONLY ? (
+        <Card style={{ gap: space.sm }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+            Your data
+          </Text>
+          <Text style={{ color: colors.muted, fontSize: type.caption }}>
+            Everything is stored only on this device. Export a backup file to keep a copy or move
+            to another phone, then restore it there with Import backup.
+          </Text>
+          <Button
+            disabled={exporting}
+            onPress={async () => {
+              setExporting(true);
+              try {
+                await exportBackup();
+              } catch (err) {
+                Alert.alert(
+                  'Could not export your data',
+                  err instanceof Error ? err.message : 'Something went wrong.',
+                );
+              } finally {
+                setExporting(false);
               }
-            >
-              Request account deletion
-            </Button>
-          </>
-        )}
-      </Card>
+            }}
+          >
+            {exporting ? 'Preparing backup…' : 'Export backup'}
+          </Button>
+          <Button
+            variant="secondary"
+            onPress={async () => {
+              if (await pickAndImportBackup()) router.replace('/');
+            }}
+          >
+            Import backup
+          </Button>
+          <Button variant="destructive" onPress={() => eraseLocalData(() => router.replace('/'))}>
+            Erase all data on this device
+          </Button>
+        </Card>
+      ) : (
+        <Card style={{ gap: space.sm }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+            Your data
+          </Text>
+          <Text style={{ color: colors.muted, fontSize: type.caption }}>
+            Download a copy of everything stored for this account — babies, care events,
+            measurements, reminders, and sharing history.
+          </Text>
+          <Button
+            disabled={exporting}
+            onPress={async () => {
+              setExporting(true);
+              try {
+                const data = await exportAccountData();
+                await Share.share({
+                  message: JSON.stringify(data, null, 2),
+                  title: 'PreemieTrack account export',
+                });
+              } catch (err) {
+                Alert.alert(
+                  'Could not export your data',
+                  err instanceof ApiError ? err.message : 'Something went wrong.',
+                );
+              } finally {
+                setExporting(false);
+              }
+            }}
+          >
+            {exporting ? 'Preparing export…' : 'Export my data'}
+          </Button>
+        </Card>
+      )}
+
+      {!OFFLINE_ONLY && (
+        <Card style={{ gap: space.sm }}>
+          <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+            Account deletion
+          </Text>
+          {pendingDeletion ? (
+            <>
+              <Text style={{ color: colors.muted, fontSize: type.caption }}>
+                A deletion request is pending review, requested{' '}
+                {new Date(pendingDeletion.requestedAt).toLocaleDateString()}. Final data-retention
+                timing is still being finalized — you can cancel any time before it's processed.
+              </Text>
+              <Button
+                variant="destructive"
+                onPress={async () => {
+                  await cancelAccountDeletion(pendingDeletion.id);
+                  setPendingDeletion(undefined);
+                }}
+              >
+                Cancel deletion request
+              </Button>
+            </>
+          ) : (
+            <>
+              <Text style={{ color: colors.muted, fontSize: type.caption }}>
+                Request permanent deletion of this account and its data. A team member reviews
+                every request before anything is removed.
+              </Text>
+              <Button
+                variant="destructive"
+                disabled={requestingDeletion}
+                onPress={() =>
+                  confirmDestructive(
+                    'Request account deletion?',
+                    "This starts the deletion review process. You can cancel it any time before it's processed.",
+                    async () => {
+                      setRequestingDeletion(true);
+                      try {
+                        const request = await requestAccountDeletion();
+                        setPendingDeletion(request);
+                      } catch (err) {
+                        Alert.alert(
+                          'Could not submit request',
+                          err instanceof ApiError ? err.message : 'Something went wrong.',
+                        );
+                      } finally {
+                        setRequestingDeletion(false);
+                      }
+                    },
+                  )
+                }
+              >
+                Request account deletion
+              </Button>
+            </>
+          )}
+        </Card>
+      )}
 
       <Card style={{ gap: space.sm }}>
         <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
