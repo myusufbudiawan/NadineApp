@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
+import { PhotoBlurToggle } from '@/components/domain/PhotoBlurToggle';
+import { usePhotoBlur } from '@/features/privacy/PhotoBlurContext';
 import { colors, radius, type } from '@/lib/design-system/tokens';
 
 // Matches the design's hero pattern: a full-width photo with the baby's
@@ -33,6 +35,7 @@ export function BabyHeroCard({
   const tapHandler = imageUrl ? onPressPhoto : onLongPressPhoto;
   const longPressHandler = imageUrl ? onLongPressPhoto : undefined;
   const interactive = Boolean(tapHandler || longPressHandler);
+  const { blurred } = usePhotoBlur();
   return (
     <View accessibilityLabel={`${name}'s profile`}>
       <TouchableOpacity
@@ -58,7 +61,11 @@ export function BabyHeroCard({
         }}
       >
         {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} />
+          <Image
+            source={{ uri: imageUrl }}
+            blurRadius={blurred ? 26 : 0}
+            style={{ width: '100%', height: '100%' }}
+          />
         ) : (
           <View style={{ alignItems: 'center', gap: 6 }}>
             <Ionicons name="person" size={52} color={colors.accent} />
@@ -89,6 +96,7 @@ export function BabyHeroCard({
           )}
         </View>
       </TouchableOpacity>
+      {imageUrl && <PhotoBlurToggle style={{ position: 'absolute', top: 12, right: 12 }} />}
       <View
         style={{
           flexDirection: 'row',
