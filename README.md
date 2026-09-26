@@ -48,6 +48,24 @@ npm run dev --workspace=@preemietrack/api
 
 The API health check is available at `http://localhost:3000/health`.
 
+## Build with EAS
+
+`apps/mobile/eas.json` defines four build profiles — two app variants (online, which syncs to the API, and offline-only, which never talks to a server), each with a `preview` (internal APK/IPA) and `production` config:
+
+```sh
+cd apps/mobile
+
+# Online build — talks to the API/Supabase
+eas build --profile preview            # internal APK/IPA for testing
+eas build --profile production         # store-ready build
+
+# Offline-only build — no server calls at all
+eas build --profile offline-preview    # internal APK/IPA for testing
+eas build --profile offline-production # store-ready build
+```
+
+Add `--platform android`, `--platform ios`, or `--platform all` (default) to any of the above to target one platform. Requires `npx eas login` once, and an EAS "preview"/"production" environment with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` set for the online profiles (`eas env:create --environment preview`, or `--environment production`) — the offline profiles need neither since `EXPO_PUBLIC_OFFLINE_ONLY=1` disables every server path. See [CI/CD](#cicd) below for the same build running via GitHub Actions instead of locally.
+
 ## Verify
 
 ```sh

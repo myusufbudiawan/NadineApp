@@ -22,6 +22,9 @@ import { PostgresCareEventRepository } from './domains/care-events/postgres-repo
 import { growthRoutes } from './domains/growth/routes.js';
 import { GrowthService } from './domains/growth/service.js';
 import { PostgresGrowthRepository } from './domains/growth/postgres-repository.js';
+import { milestoneRoutes } from './domains/milestones/routes.js';
+import { MilestoneService } from './domains/milestones/service.js';
+import { PostgresMilestoneRepository } from './domains/milestones/postgres-repository.js';
 import { remindersRoutes } from './domains/reminders/routes.js';
 import { RemindersService } from './domains/reminders/service.js';
 import { PostgresReminderRepository } from './domains/reminders/postgres-repository.js';
@@ -81,6 +84,7 @@ export function buildServer(
   const babyProfileService = new BabyProfileService(new PostgresBabyRepository(db));
   const careEventsService = new CareEventsService(new PostgresCareEventRepository(db), auditService);
   const growthService = new GrowthService(new PostgresGrowthRepository(db), auditService);
+  const milestoneService = new MilestoneService(new PostgresMilestoneRepository(db), auditService);
   const remindersService = new RemindersService(new PostgresReminderRepository(db), auditService);
   const sharingService = new SharingService(new PostgresShareRepository(db), auditService);
   const contentService = new ContentService(new PostgresContentRepository(db));
@@ -102,6 +106,9 @@ export function buildServer(
   );
   app.register((instance) =>
     growthRoutes(instance, { service: growthService, babyProfileService, sharingService }),
+  );
+  app.register((instance) =>
+    milestoneRoutes(instance, { service: milestoneService, babyProfileService, sharingService }),
   );
   app.register((instance) =>
     remindersRoutes(instance, { service: remindersService, babyProfileService, sharingService }),

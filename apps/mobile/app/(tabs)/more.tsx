@@ -12,9 +12,15 @@ import { actualAge } from '@/lib/age';
 import { listBabies } from '@/lib/api/babies';
 import { colors, type } from '@/lib/design-system/tokens';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
+import { formatMeasurement } from '@/lib/format';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 
-const items = [
+// Server-mediated screens have nothing to do in the offline-only build.
+const serverOnlyRoutes = ['/more/reports', '/more/share-data', '/more/sync-conflicts'];
+
+const allItems = [
   { title: 'Profile & Baby Info', icon: 'person-circle-outline' as const, route: '/baby-setup' },
+  { title: 'Milestones', icon: 'ribbon-outline' as const, route: '/more/milestones' },
   { title: 'Reminders', icon: 'notifications-outline' as const, route: '/more/reminders' },
   {
     title: 'Customize Dashboard',
@@ -28,6 +34,9 @@ const items = [
   { title: 'Help & Support', icon: 'help-circle-outline' as const, route: '/more/help' },
   { title: 'About PreemieTrack', icon: 'information-circle-outline' as const, route: '/more/about' },
 ];
+const items = OFFLINE_ONLY
+  ? allItems.filter((item) => !serverOnlyRoutes.includes(item.route))
+  : allItems;
 
 export default function More() {
   const [profile, setProfile] = useState<BabyProfile>();
@@ -40,11 +49,13 @@ export default function More() {
       loadBabyProfile(LOCAL_BABY_ID).then((p) => {
         if (active) setProfile(p);
       });
-      listBabies()
-        .then((babies) => {
-          if (active) setHasMultipleBabies(babies.length > 1);
-        })
-        .catch(() => {});
+      if (!OFFLINE_ONLY) {
+        listBabies()
+          .then((babies) => {
+            if (active) setHasMultipleBabies(babies.length > 1);
+          })
+          .catch(() => {});
+      }
       return () => {
         active = false;
       };
@@ -71,7 +82,7 @@ export default function More() {
   if (profile) {
     const age = actualAge(new Date(profile.dateOfBirth));
     ageWeightSummary = `${age.weeks}w ${age.days}d${
-      profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
+      profile.birthWeightKg ? ` · ${formatMeasurement(profile.birthWeightKg)} kg` : ''
     }`;
   }
 

@@ -83,6 +83,8 @@ export async function getBabyPhotoUrl(path: string | undefined): Promise<string 
   // feature existed) — nothing to sign.
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   if (path.startsWith('file://')) return undefined;
+  // Offline-only build: the photo is stored inline in the profile.
+  if (path.startsWith('data:')) return path;
 
   // Strip the `?v=...` cache-busting tag uploadBabyPhoto appends — it's only
   // there to change the stored value on re-upload, not part of the object path.

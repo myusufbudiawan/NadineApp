@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { markOnboarded } from '@/lib/auth/onboardingState';
+import { pickAndImportBackup } from '@/lib/offline/backup';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import { colors, space, type } from '@/lib/design-system/tokens';
 const points = [
   {
@@ -101,21 +103,30 @@ export default function Onboarding() {
             lineHeight: 20,
           }}
         >
-          We use secure storage for your session. You control your baby’s
-          information and sharing.
+          {OFFLINE_ONLY
+            ? 'No account, no cloud. Everything stays on this device unless you export a backup.'
+            : 'We use secure storage for your session. You control your baby’s information and sharing.'}
         </Text>
       </Card>
       <Button
         onPress={() => {
           markOnboarded();
-          router.push('/login?mode=signup');
+          // replace, not push: baby-setup goes back() after saving if it can.
+          if (OFFLINE_ONLY) router.replace('/baby-setup');
+          else router.push('/login?mode=signup');
         }}
       >
         Get started
       </Button>
       <Text
         accessibilityRole="link"
-        onPress={() => {
+        onPress={async () => {
+          if (OFFLINE_ONLY) {
+            if (!(await pickAndImportBackup())) return;
+            await markOnboarded();
+            router.replace('/');
+            return;
+          }
           markOnboarded();
           router.push('/login?mode=signin');
         }}
@@ -126,7 +137,7 @@ export default function Onboarding() {
           fontFamily: type.fontBodyMedium,
         }}
       >
-        I already have an account
+        {OFFLINE_ONLY ? 'Restore from a backup' : 'I already have an account'}
       </Text>
     </ScrollView>
   );

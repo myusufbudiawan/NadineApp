@@ -2,12 +2,14 @@ import * as Crypto from 'expo-crypto';
 import { createBaby, updateBaby } from '@/lib/api/babies';
 import { queueMutation } from '@/lib/offline/database';
 import { getServerBabyId, setServerBabyId } from '@/lib/offline/serverBaby';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import { BabyProfile } from './types';
 
 // Shared by baby-setup.tsx (full profile edits) and home.tsx (photo picker):
 // push straight to the server, falling back to the same mutation_queue/backoff
 // sync.ts uses for care events if that fails.
 export async function pushBabyProfile(profile: BabyProfile): Promise<void> {
+  if (OFFLINE_ONLY) return;
   const { id: _localId, ...payload } = profile;
   try {
     const existingServerId = await getServerBabyId();

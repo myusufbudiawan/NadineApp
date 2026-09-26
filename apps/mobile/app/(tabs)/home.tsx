@@ -2,10 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, LayoutAnimation, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
+import { MilestoneCard } from '@/components/domain/MilestoneCard';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { TabScreen } from '@/components/ui/Screen';
@@ -17,6 +18,8 @@ import { computeTodaySummary, TodaySummary } from '@/features/care-events/todayS
 import { CareEventType } from '@/features/care-events/types';
 import { getDashboardMetricView } from '@/features/dashboard/metricConfig';
 import { defaultDashboardMetrics, loadDashboardMetrics } from '@/features/dashboard/preferences';
+import { detectMilestones } from '@/features/milestones/detect';
+import { loadMilestones, MilestoneRecords, subscribeToMilestones } from '@/features/milestones/storage';
 import { loadReminders, ReminderView } from '@/features/reminders/storage';
 import { reminderTypeLabels } from '@/features/reminders/types';
 import { actualAge, correctedAge, toAge } from '@/lib/age';
@@ -26,19 +29,23 @@ import { saveProfile } from '@/lib/offline/database';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
 import { getServerBabyId } from '@/lib/offline/serverBaby';
 import { runSync } from '@/lib/offline/sync';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 import { colors, type } from '@/lib/design-system/tokens';
 import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
+import { formatMeasurement } from '@/lib/format';
 
-function SyncBanner({ status }: { status: 'success' | 'error' }) {
+function SyncBanner({ status, onDismiss }: { status: 'success' | 'error'; onDismiss: () => void }) {
   const opacity = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(1500),
       Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [opacity]);
+    ]).start(({ finished }) => {
+      if (finished) onDismiss();
+    });
+  }, [opacity, onDismiss]);
   const success = status === 'success';
   return (
     <Animated.View
@@ -82,15 +89,18 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'success' | 'error'>();
   const [dashboardMetrics, setDashboardMetrics] = useState<CareEventType[]>(defaultDashboardMetrics);
+  const [milestones, setMilestones] = useState<MilestoneRecords>({});
 
   const refresh = useCallback(async () => {
-    const [nextProfile, nextSummary, reminders] = await Promise.all([
+    const [nextProfile, nextSummary, reminders, nextMilestones] = await Promise.all([
       loadBabyProfile(LOCAL_BABY_ID),
       computeTodaySummary(LOCAL_BABY_ID),
       loadReminders(LOCAL_BABY_ID),
+      loadMilestones(),
     ]);
     setProfile(nextProfile);
     setSummary(nextSummary);
+    setMilestones(nextMilestones);
     setUpcoming(
       reminders
         .filter((r) => r.enabled && r.nextFiresAt)
@@ -98,7 +108,19 @@ export default function Home() {
         .slice(0, 2),
     );
     setLoaded(true);
+    // Home is where parents land after logging a weight or feed, so it's the
+    // natural moment to notice a data-driven milestone and celebrate it.
+    if (nextProfile) {
+      detectMilestones(LOCAL_BABY_ID, nextProfile).catch((err) => {
+        console.warn('milestone detection failed', err);
+      });
+    }
   }, []);
+
+  useEffect(
+    () => subscribeToMilestones(() => loadMilestones().then(setMilestones).catch(() => {})),
+    [],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -126,6 +148,12 @@ export default function Home() {
   const onPullToRefresh = useCallback(async () => {
     setRefreshing(true);
     setSyncStatus(undefined);
+    if (OFFLINE_ONLY) {
+      // Nothing to sync — just re-read local data.
+      await refresh();
+      setRefreshing(false);
+      return;
+    }
     try {
       const summary = await runSync();
       const serverBabyId = await getServerBabyId();
@@ -148,10 +176,22 @@ export default function Home() {
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      // The offline build stores the photo inline in the profile row (and
+      // so in backups) — keep it small.
+      quality: OFFLINE_ONLY ? 0.5 : 0.8,
       base64: true,
     });
     if (result.canceled || !result.assets[0]?.base64) return;
+
+    if (OFFLINE_ONLY) {
+      const next: BabyProfile = {
+        ...profile,
+        photoUri: `data:image/jpeg;base64,${result.assets[0].base64}`,
+      };
+      await saveProfile(next.id, JSON.stringify(next));
+      setProfile(next);
+      return;
+    }
 
     const serverBabyId = await getServerBabyId();
     if (!serverBabyId) {
@@ -254,7 +294,7 @@ export default function Home() {
     heroCorrectedAge = { label: `${corrected.totalDays} days`, sub: postmenstrualLabel };
     const sexLabel = profile.sex === 'girl' ? 'Girl' : 'Boy';
     bornSummary = `${sexLabel} · Born ${profile.gestationalWeeks}w ${profile.gestationalDays}d${
-      profile.birthWeightKg ? ` · ${profile.birthWeightKg} kg` : ''
+      profile.birthWeightKg ? ` · ${formatMeasurement(profile.birthWeightKg)} kg` : ''
     }`;
     const fullTermWeeks = profile.fullTermReferenceWeeks;
     pma = {
@@ -266,7 +306,16 @@ export default function Home() {
 
   return (
     <TabScreen refreshing={refreshing} onRefresh={onPullToRefresh}>
-      {syncStatus && <SyncBanner key={Date.now()} status={syncStatus} />}
+      {syncStatus && (
+        <SyncBanner
+          key={Date.now()}
+          status={syncStatus}
+          onDismiss={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setSyncStatus(undefined);
+          }}
+        />
+      )}
       <View
         style={{
           flexDirection: 'row',
@@ -346,6 +395,13 @@ export default function Home() {
             <View style={{ height: '100%', width: `${pma.percent}%`, backgroundColor: colors.accent }} />
           </View>
         </View>
+      )}
+      {profile && (
+        <MilestoneCard
+          profile={profile}
+          records={milestones}
+          onPress={() => router.push('/more/milestones')}
+        />
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>

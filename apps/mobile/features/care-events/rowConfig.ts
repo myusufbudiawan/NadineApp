@@ -10,6 +10,7 @@ import {
   TemperatureData,
   WeightData,
 } from './types';
+import { formatMeasurement } from '@/lib/format';
 
 export function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -101,7 +102,7 @@ export const careEventRows: CareEventRowConfig[] = [
     emptyLabel: 'No weight logged yet',
     format: (e) => {
       const d = e.data as WeightData;
-      return `Last: ${d.value} ${d.unit} · ${formatTime(e.occurredAt)}`;
+      return `Last: ${formatMeasurement(d.value)} ${d.unit} · ${formatTime(e.occurredAt)}`;
     },
   },
   {
@@ -153,7 +154,7 @@ export const careEventRows: CareEventRowConfig[] = [
     emptyLabel: 'No temperature logged yet',
     format: (e) => {
       const d = e.data as TemperatureData;
-      return `Last: ${d.value}°${d.unit} · ${formatTime(e.occurredAt)}`;
+      return `Last: ${formatMeasurement(d.value)}°${d.unit} · ${formatTime(e.occurredAt)}`;
     },
   },
   {

@@ -13,3 +13,9 @@ export async function hasOnboarded(): Promise<boolean> {
 export async function markOnboarded(): Promise<void> {
   await secureStoreAdapter.setItem(KEY, '1');
 }
+
+// Offline-only build: "Erase all data" returns to onboarding, where the
+// user can start fresh or restore a backup.
+export async function clearOnboarded(): Promise<void> {
+  await secureStoreAdapter.removeItem(KEY);
+}
