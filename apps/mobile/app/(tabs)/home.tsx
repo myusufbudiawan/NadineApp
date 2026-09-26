@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, LayoutAnimation, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
@@ -35,15 +35,17 @@ import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
 import { formatMeasurement } from '@/lib/format';
 
-function SyncBanner({ status }: { status: 'success' | 'error' }) {
+function SyncBanner({ status, onDismiss }: { status: 'success' | 'error'; onDismiss: () => void }) {
   const opacity = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.sequence([
       Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       Animated.delay(1500),
       Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: true }),
-    ]).start();
-  }, [opacity]);
+    ]).start(({ finished }) => {
+      if (finished) onDismiss();
+    });
+  }, [opacity, onDismiss]);
   const success = status === 'success';
   return (
     <Animated.View
@@ -304,7 +306,16 @@ export default function Home() {
 
   return (
     <TabScreen refreshing={refreshing} onRefresh={onPullToRefresh}>
-      {syncStatus && <SyncBanner key={Date.now()} status={syncStatus} />}
+      {syncStatus && (
+        <SyncBanner
+          key={Date.now()}
+          status={syncStatus}
+          onDismiss={() => {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setSyncStatus(undefined);
+          }}
+        />
+      )}
       <View
         style={{
           flexDirection: 'row',
