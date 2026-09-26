@@ -4,7 +4,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Image, Modal, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PhotoBlurToggle } from '@/components/domain/PhotoBlurToggle';
 import { BabyProfile } from '@/features/baby-profile/types';
+import { usePhotoBlur } from '@/features/privacy/PhotoBlurContext';
 import { milestoneSounds } from '@/features/milestones/sounds';
 import { daysSinceBirth, MilestoneDefinition, pronounsFor } from '@/features/milestones/types';
 import { colors, space, type } from '@/lib/design-system/tokens';
@@ -38,6 +40,7 @@ export function CelebrationOverlay({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { blurred } = usePhotoBlur();
   const palette = palettes[profile.sex] ?? palettes.girl;
   const grand = Boolean(milestone.grand);
   const name = profile.name || 'Your baby';
@@ -172,6 +175,7 @@ export function CelebrationOverlay({
                   {photoUrl ? (
                     <Image
                       source={{ uri: photoUrl }}
+                      blurRadius={blurred ? 22 : 0}
                       style={{ width: medallionSize, height: medallionSize }}
                       accessibilityLabel={`${name}'s photo`}
                     />
@@ -205,6 +209,9 @@ export function CelebrationOverlay({
               >
                 <Ionicons name={milestone.icon} size={19} color={colors.surface} />
               </View>
+              {photoUrl && (
+                <PhotoBlurToggle size={32} style={{ position: 'absolute', top: 10, right: 10 }} />
+              )}
             </Animated.View>
 
             <Animated.View style={[{ alignItems: 'center', gap: space.md, maxWidth: 360 }, contentStyle]}>
