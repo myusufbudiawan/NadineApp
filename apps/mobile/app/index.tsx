@@ -7,8 +7,7 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { listBabies } from '@/lib/api/babies';
 import { ensureUnlockedThisLaunch } from '@/lib/auth/biometric';
-import { hasOnboarded, markOnboarded } from '@/lib/auth/onboardingState';
-import { isDemoSeeded, seedDemoData } from '@/lib/demo/seed';
+import { hasOnboarded } from '@/lib/auth/onboardingState';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { resetLocalData, saveProfile } from '@/lib/offline/database';
 import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
@@ -37,15 +36,8 @@ export default function Index() {
       // biometric lock, then straight to whatever is stored locally.
       let active = true;
       (async () => {
-        // Web demo: the first visit lands straight on a sample baby's
-        // dashboard instead of an empty app. Erasing the demo data later
-        // falls through to the normal onboarding → baby-setup flow below.
-        if (WEB_DEMO && !(await isDemoSeeded())) {
-          await seedDemoData();
-          await markOnboarded();
-          if (active) setTarget('/(tabs)/home');
-          return;
-        }
+        // Web demo: the root layout has already seeded the sample baby on
+        // first visit (ensureDemoSeeded), so this lands on its dashboard.
         if (!(await hasOnboarded())) {
           if (active) setTarget('/onboarding');
           return;

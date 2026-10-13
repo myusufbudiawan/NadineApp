@@ -2,12 +2,14 @@ import '@/lib/webAlert';
 import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
 import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
 import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/lib/design-system/tokens';
 import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { CelebrationHost } from '@/components/celebration/CelebrationHost';
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
+import { ensureDemoSeeded } from '@/lib/demo/seed';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
 import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
@@ -35,7 +37,16 @@ export default function RootLayout() {
     Lora_400Regular,
     Lora_600SemiBold,
   });
-  if (!fontsLoaded) {
+  // Web demo: the sample baby must exist before any screen reads storage,
+  // whichever URL the visitor opened first.
+  const [demoReady, setDemoReady] = useState(!WEB_DEMO);
+  useEffect(() => {
+    if (!WEB_DEMO) return;
+    ensureDemoSeeded()
+      .catch((err) => console.warn('demo seed failed', err))
+      .finally(() => setDemoReady(true));
+  }, []);
+  if (!fontsLoaded || !demoReady) {
     return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
   }
   return (

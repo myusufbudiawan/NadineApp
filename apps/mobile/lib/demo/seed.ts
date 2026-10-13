@@ -3,6 +3,7 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { BabyProfile } from '@/features/baby-profile/types';
 import { CareEventData, CareEventType } from '@/features/care-events/types';
 import { MilestoneId } from '@/features/milestones/types';
+import { markOnboarded } from '@/lib/auth/onboardingState';
 import { secureStoreAdapter } from '@/lib/auth/session';
 import {
   getDatabase,
@@ -47,6 +48,16 @@ function weightOnDay(day: number) {
 
 export async function isDemoSeeded(): Promise<boolean> {
   return (await secureStoreAdapter.getItem(SEEDED_KEY)) === '1';
+}
+
+// Called once from the root layout so a deep link (e.g. /home) gets the
+// sample baby too, not just the launch route. Skipped onboarding: the demo
+// opens straight on the dashboard. Erasing later keeps the seeded flag, so
+// it falls through to the normal onboarding rather than re-seeding.
+export async function ensureDemoSeeded(): Promise<void> {
+  if (await isDemoSeeded()) return;
+  await seedDemoData();
+  await markOnboarded();
 }
 
 let inFlight: Promise<void> | undefined;

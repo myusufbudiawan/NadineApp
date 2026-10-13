@@ -104,6 +104,10 @@ GitHub Actions runs the same checks for pushes and pull requests.
 
 ## Changelog
 
+### 2026-10-13 — Fix web demo: seed the sample baby on deep links
+
+- Opening the deployed demo at a URL other than `/` (e.g. `/home`) skipped the sample-baby seeding and showed "Set up your baby's profile", because seeding lived in the launch route. It now runs once from the root layout (`ensureDemoSeeded` in `lib/demo/seed.ts`) before any screen reads storage.
+
 ### 2026-10-13 — Web demo for Vercel (no backend, no login, sample baby)
 
 - **Web = demo mode:** `lib/offlineOnly.ts` adds `WEB_DEMO` (`Platform.OS === 'web'`), which forces the existing `OFFLINE_ONLY` path — no login/register, no API/Supabase, data only in the browser. Native builds are unchanged.
