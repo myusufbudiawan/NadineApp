@@ -24,6 +24,12 @@ let handlerInstalled = false;
 
 function loadNotifications(): NotificationsModule | undefined {
   if (cached !== undefined) return cached ?? undefined;
+  // No scheduled local notifications in a browser (the web demo) — reminders
+  // still save and show in-app.
+  if (Platform.OS === 'web') {
+    cached = null;
+    return undefined;
+  }
   try {
     cached = require('expo-notifications') as NotificationsModule;
   } catch (error) {

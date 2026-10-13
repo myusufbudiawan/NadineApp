@@ -100,6 +100,11 @@
         "projectId": "9ce7c8dd-cfb5-472e-a49c-bc57dab9547a"
       }
     },
-    "owner": "myusufb"
+    "owner": "myusufb",
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png"
+    }
   }
 }

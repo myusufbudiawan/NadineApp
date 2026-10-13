@@ -7,10 +7,11 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadBabyProfile } from '@/features/baby-profile/storage';
 import { listBabies } from '@/lib/api/babies';
 import { ensureUnlockedThisLaunch } from '@/lib/auth/biometric';
-import { hasOnboarded } from '@/lib/auth/onboardingState';
+import { hasOnboarded, markOnboarded } from '@/lib/auth/onboardingState';
+import { isDemoSeeded, seedDemoData } from '@/lib/demo/seed';
 import { colors, space, type } from '@/lib/design-system/tokens';
 import { resetLocalData, saveProfile } from '@/lib/offline/database';
-import { OFFLINE_ONLY } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
 import {
   clearServerBabyId,
@@ -31,10 +32,20 @@ export default function Index() {
 
   useEffect(() => {
     if (OFFLINE_ONLY) {
+      setFailed(false);
       // No account and no server: onboarding once, then the device's own
       // biometric lock, then straight to whatever is stored locally.
       let active = true;
       (async () => {
+        // Web demo: the first visit lands straight on a sample baby's
+        // dashboard instead of an empty app. Erasing the demo data later
+        // falls through to the normal onboarding → baby-setup flow below.
+        if (WEB_DEMO && !(await isDemoSeeded())) {
+          await seedDemoData();
+          await markOnboarded();
+          if (active) setTarget('/(tabs)/home');
+          return;
+        }
         if (!(await hasOnboarded())) {
           if (active) setTarget('/onboarding');
           return;
@@ -45,7 +56,12 @@ export default function Index() {
         }
         const local = await loadBabyProfile(LOCAL_BABY_ID);
         if (active) setTarget(local ? '/(tabs)/home' : '/baby-setup');
-      })();
+      })().catch((err) => {
+        // Local storage itself failed to open — on web, typically the demo
+        // already open in another tab (the browser database is single-tab).
+        console.warn('index: could not open local data', err);
+        if (active) setFailed(true);
+      });
       return () => {
         active = false;
       };
@@ -158,8 +174,11 @@ export default function Index() {
         }}
       >
         <Text style={{ fontSize: type.body, color: colors.text, textAlign: 'center' }}>
-          Couldn't reach the server to load your baby's profile. Check your
-          connection and try again.
+          {OFFLINE_ONLY
+            ? WEB_DEMO
+              ? "Couldn't open this browser's storage. If PreemieTrack is open in another tab, close it and try again."
+              : "Couldn't open your baby's data on this device. Try again."
+            : "Couldn't reach the server to load your baby's profile. Check your connection and try again."}
         </Text>
         <Button onPress={retry}>Retry</Button>
       </View>

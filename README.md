@@ -66,6 +66,16 @@ eas build --profile offline-production # store-ready build
 
 Add `--platform android`, `--platform ios`, or `--platform all` (default) to any of the above to target one platform. Requires `npx eas login` once, and an EAS "preview"/"production" environment with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` set for the online profiles (`eas env:create --environment preview`, or `--environment production`) — the offline profiles need neither since `EXPO_PUBLIC_OFFLINE_ONLY=1` disables every server path. See [CI/CD](#cicd) below for the same build running via GitHub Actions instead of locally.
 
+## Web demo (Vercel)
+
+The web build of `apps/mobile` is a public, no-backend demo: it runs the offline-only code path (`lib/offlineOnly.ts` — `WEB_DEMO` forces `OFFLINE_ONLY` on web), so there is no login/register and no API or Supabase calls. Data lives only in the visitor's browser (expo-sqlite on web — wa-sqlite in a worker, persisted to OPFS). The first visit seeds a sample baby with ~7 weeks of history (`lib/demo/seed.ts`) and lands on Home; *More → Settings* can reset the demo, or erase everything to go through onboarding and register your own baby.
+
+```sh
+npm run build:web --workspace=@preemietrack/mobile   # static export → apps/mobile/dist
+```
+
+Deploy it as its own Vercel project (separate from the API) with **Root Directory** set to `apps/mobile` — everything else comes from `apps/mobile/vercel.json`. That file must keep the `Cross-Origin-Opener-Policy`/`Cross-Origin-Embedder-Policy` headers: expo-sqlite needs `SharedArrayBuffer`, which browsers only expose to cross-origin-isolated pages (`metro.config.js` sets the same headers for `expo start --web`). Only one tab can hold the browser database at a time; a second tab shows a "close the other tab" message.
+
 ## Verify
 
 ```sh
@@ -81,6 +91,7 @@ GitHub Actions runs the same checks for pushes and pull requests.
 
 - **CI** (`.github/workflows/ci.yml`) — lint/typecheck/test/build on every push and PR.
 - **Deploy API** (`.github/workflows/deploy-api.yml`) — deploys `services/api` to Vercel on every push to `main` that touches it, or via manual dispatch. Requires repo secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
+- **Deploy web demo** (`.github/workflows/deploy-web.yml`) — deploys the `apps/mobile` web demo to Vercel on every push to `main` that touches it, or via manual dispatch. Requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_WEB_PROJECT_ID` (the web project's id); skips itself until `VERCEL_WEB_PROJECT_ID` is set. Alternatively, connect the repo to that Vercel project directly with Root Directory `apps/mobile`.
 - **Build Android APK** (`.github/workflows/build-android.yml`) — manual dispatch only. Builds a debug APK with EAS and attaches it to a GitHub Release. Requires repo secret `EXPO_TOKEN`. The `preview` EAS build profile is tied to an EAS "preview" environment (`apps/mobile/eas.json`) — `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` must exist there (`eas env:create --environment preview` from `apps/mobile`, or via the expo.dev project dashboard) or the built app will have no Supabase config baked in and will fail on launch.
 
 ## Notes for contributors
@@ -92,6 +103,15 @@ GitHub Actions runs the same checks for pushes and pull requests.
 - **Update the Changelog below for every change**, per [PREEMIETRACK_PLAN.md](PREEMIETRACK_PLAN.md) Section 0, rule 6 — newest entry at the top, one entry per session/PR, gaps flagged rather than glossed over.
 
 ## Changelog
+
+### 2026-10-13 — Web demo for Vercel (no backend, no login, sample baby)
+
+- **Web = demo mode:** `lib/offlineOnly.ts` adds `WEB_DEMO` (`Platform.OS === 'web'`), which forces the existing `OFFLINE_ONLY` path — no login/register, no API/Supabase, data only in the browser. Native builds are unchanged.
+- **Sample baby:** `lib/demo/seed.ts` seeds "Aria" (born 31+2, 49 days old) on the first visit — weights from birth, three days of feeds/diapers/sleep/temps/meds, kangaroo care, length/head measurements, notes, 7 milestones and 3 reminders, all dated relative to now. Left just out of reach on purpose: logging a ≥2 kg weight or one more feed triggers a milestone celebration. `app/index.tsx` seeds and skips onboarding; a `DemoBanner` on Home links to *Settings*, which gains *Reset demo data*.
+- **Web shims:** `lib/webAlert.ts` routes `Alert.alert` (a no-op in react-native-web) to browser dialogs; `components/forms/DateTimeField(.web).tsx` swaps the native date/time picker for `<input type="date|time">`; JSON backup export/import uses a download / file picker on web; biometrics, local notifications and the Android widget handler are skipped on web; the app renders as a phone-width column on wide screens.
+- **Deploy:** `apps/mobile/vercel.json` (static `expo export --platform web`, COOP/COEP headers required by expo-sqlite web, SPA rewrite), `metro.config.js` (wasm asset + same headers in dev), `public/index.html`, `npm run build:web`, `.github/workflows/deploy-web.yml`, and a CI step building the web export.
+- Also: `app/index.tsx`'s offline branch now shows a retry screen if local storage fails to open instead of spinning forever; erase/import/reset in Settings clear the navigation history so finishing setup lands on Home.
+- Gap: milestone chimes are `.m4a` (AAC) — they play in Chrome/Safari/Edge but may be silent in browsers without an AAC decoder.
 
 ### 2026-09-08 — Phase 5 (Hardening): Offline sync engine end-to-end, log-scrubbing, analytics allowlist
 
