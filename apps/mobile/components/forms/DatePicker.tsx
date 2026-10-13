@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from '@/components/forms/DateTimeField';
 import { colors, radius, space, type } from '@/lib/design-system/tokens';
 
 // Calendar-date counterpart to TimePicker (which is deliberately time-of-day

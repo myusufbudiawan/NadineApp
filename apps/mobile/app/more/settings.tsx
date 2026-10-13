@@ -22,8 +22,17 @@ import {
 } from '@/lib/api/privacy';
 import { supabase } from '@/lib/supabase/client';
 import { eraseLocalData, exportBackup, pickAndImportBackup } from '@/lib/offline/backup';
-import { OFFLINE_ONLY } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
+import { seedDemoData } from '@/lib/demo/seed';
 import appConfig from '../../app.json';
+
+// After the local data is swapped out, re-run app/index.tsx's launch routing
+// from a clean history — so finishing onboarding/baby-setup afterwards lands
+// on Home rather than going back() into this stale Settings screen.
+function restartAtLaunch() {
+  if (router.canDismiss()) router.dismissAll();
+  router.replace('/');
+}
 
 export default function Settings() {
   const { session } = useAuthSession();
@@ -115,7 +124,9 @@ export default function Settings() {
                 : permission === 'denied'
                   ? 'Off in system settings — open Settings to turn back on.'
                   : permission === 'unavailable'
-                    ? 'Not available in this app build — reminders will still save without an alert.'
+                    ? WEB_DEMO
+                      ? 'Not available in the web demo — reminders still save and show in the app.'
+                      : 'Not available in this app build — reminders will still save without an alert.'
                     : 'Not enabled yet.'}
             </Text>
           </View>
@@ -161,9 +172,28 @@ export default function Settings() {
             Your data
           </Text>
           <Text style={{ color: colors.muted, fontSize: type.caption }}>
-            Everything is stored only on this device. Export a backup file to keep a copy or move
-            to another phone, then restore it there with Import backup.
+            {WEB_DEMO
+              ? 'This is a demo — everything is stored only in this browser, nothing is sent anywhere. Reset to bring back the sample baby, or erase everything to set up your own.'
+              : 'Everything is stored only on this device. Export a backup file to keep a copy or move to another phone, then restore it there with Import backup.'}
           </Text>
+          {WEB_DEMO && (
+            <Button
+              variant="secondary"
+              onPress={() =>
+                confirmDestructive(
+                  'Reset demo data?',
+                  'Everything you changed is replaced with the sample baby and her history.',
+                  async () => {
+                    await seedDemoData();
+                    restartAtLaunch();
+                  },
+                  'Reset',
+                )
+              }
+            >
+              Reset demo data
+            </Button>
+          )}
           <Button
             disabled={exporting}
             onPress={async () => {
@@ -185,13 +215,13 @@ export default function Settings() {
           <Button
             variant="secondary"
             onPress={async () => {
-              if (await pickAndImportBackup()) router.replace('/');
+              if (await pickAndImportBackup()) restartAtLaunch();
             }}
           >
             Import backup
           </Button>
-          <Button variant="destructive" onPress={() => eraseLocalData(() => router.replace('/'))}>
-            Erase all data on this device
+          <Button variant="destructive" onPress={() => eraseLocalData(restartAtLaunch)}>
+            {WEB_DEMO ? 'Erase all data and start fresh' : 'Erase all data on this device'}
           </Button>
         </Card>
       ) : (

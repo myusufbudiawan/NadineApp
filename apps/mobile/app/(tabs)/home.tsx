@@ -4,6 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Image, LayoutAnimation, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
+import { DemoBanner } from '@/components/domain/DemoBanner';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
 import { MetricCard } from '@/components/domain/MetricCard';
 import { MilestoneCard } from '@/components/domain/MilestoneCard';
@@ -29,7 +30,7 @@ import { saveProfile } from '@/lib/offline/database';
 import { hydrateFromServer } from '@/lib/offline/hydrate';
 import { getServerBabyId } from '@/lib/offline/serverBaby';
 import { runSync } from '@/lib/offline/sync';
-import { OFFLINE_ONLY } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
 import { colors, type } from '@/lib/design-system/tokens';
 import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
@@ -341,6 +342,7 @@ export default function Home() {
           color={colors.text}
         />
       </View>
+      {WEB_DEMO && <DemoBanner />}
       <BabyHeroCard
         name={profile?.name || 'Your baby'}
         imageUrl={photoUrl}

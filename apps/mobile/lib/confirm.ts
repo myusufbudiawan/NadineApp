@@ -6,9 +6,10 @@ export function confirmDestructive(
   title: string,
   message: string,
   onConfirm: () => void,
+  confirmText = 'Delete',
 ) {
   Alert.alert(title, message, [
     { text: 'Cancel', style: 'cancel' },
-    { text: 'Delete', style: 'destructive', onPress: onConfirm },
+    { text: confirmText, style: 'destructive', onPress: onConfirm },
   ]);
 }

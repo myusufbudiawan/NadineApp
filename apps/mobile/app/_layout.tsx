@@ -1,3 +1,4 @@
+import '@/lib/webAlert';
 import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
 import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
 import { Stack } from 'expo-router';
@@ -9,7 +10,18 @@ import { CelebrationHost } from '@/components/celebration/CelebrationHost';
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
-import { OFFLINE_ONLY } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
+
+// The app is laid out for a phone — on a wide browser window, show it as a
+// phone-width column instead of stretching every card across the screen.
+const webFrame = {
+  flex: 1,
+  width: '100%',
+  maxWidth: 480,
+  alignSelf: 'center',
+  backgroundColor: colors.canvas,
+  boxShadow: '0 0 24px rgba(0, 0, 0, 0.08)',
+} as const;
 export default function RootLayout() {
   // Drains the offline mutation queue on launch, on every foreground, and
   // on a background interval (Section 11 5.1) — mounted once at the root so
@@ -27,7 +39,7 @@ export default function RootLayout() {
     return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
   }
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={WEB_DEMO ? webFrame : undefined}>
       <PhotoBlurProvider>
         <StatusBar style="dark" />
         <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>

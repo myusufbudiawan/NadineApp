@@ -11,7 +11,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types __tests__/age.runner.ts && node --experimental-strip-types __tests__/backup.runner.ts",
-    "build": "expo export --platform android --platform ios --no-bytecode"
+    "build": "expo export --platform android --platform ios --no-bytecode",
+    "build:web": "expo export --platform web"
   },
   "dependencies": {
     "@expo-google-fonts/cormorant-garamond": "^0.4.1",

@@ -1,4 +1,5 @@
 import * as LocalAuthentication from 'expo-local-authentication';
+import { Platform } from 'react-native';
 import { isUnlockedThisLaunch, markUnlockedThisLaunch } from './unlockState';
 
 // Gates app open with Face ID/Touch ID/device passcode when the hardware
@@ -6,6 +7,8 @@ import { isUnlockedThisLaunch, markUnlockedThisLaunch } from './unlockState';
 // nothing to prompt, so treat the device as unlocked rather than blocking
 // people who haven't set up biometrics.
 export async function canUseBiometricLock(): Promise<boolean> {
+  // No device biometrics in a browser (the web demo).
+  if (Platform.OS === 'web') return false;
   const [hasHardware, isEnrolled] = await Promise.all([
     LocalAuthentication.hasHardwareAsync(),
     LocalAuthentication.isEnrolledAsync(),
