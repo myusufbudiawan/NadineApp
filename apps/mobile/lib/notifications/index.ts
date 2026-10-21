@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 // `expo-notifications` is lazy-loaded behind a try/catch rather than
 // imported at module scope: as of Expo SDK 53, merely *importing* it on
 // Android inside Expo Go throws synchronously (its push-token
@@ -10,6 +12,12 @@ let cached: NotificationsModule | null | undefined;
 
 function loadNotifications(): NotificationsModule | undefined {
   if (cached !== undefined) return cached ?? undefined;
+  // No scheduled local notifications in a browser (the web demo) — reminders
+  // still save and show in-app.
+  if (Platform.OS === 'web') {
+    cached = null;
+    return undefined;
+  }
   try {
     cached = require('expo-notifications') as NotificationsModule;
   } catch (error) {

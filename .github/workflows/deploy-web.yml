@@ -1,0 +1,42 @@
+name: Deploy web demo to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      # A separate Vercel project from the API, with Root Directory set to
+      # apps/mobile (settings come from apps/mobile/vercel.json).
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+    steps:
+      - name: Skip until the web project is configured
+        id: configured
+        run: |
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "VERCEL_WEB_PROJECT_ID secret not set — skipping web deploy."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.configured.outputs.ok == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.configured.outputs.ok == 'true'
+        with:
+          node-version: 22
+      - if: steps.configured.outputs.ok == 'true'
+        run: npm install -g vercel
+      - if: steps.configured.outputs.ok == 'true'
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - if: steps.configured.outputs.ok == 'true'
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+      - if: steps.configured.outputs.ok == 'true'
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

@@ -1,7 +1,7 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadDashboardMetrics, saveDashboardMetrics } from '@/features/dashboard/preferences';
 import { CareEventType } from '@/features/care-events/types';
@@ -40,7 +40,18 @@ async function buildBackup(): Promise<Backup> {
 
 export async function exportBackup(): Promise<void> {
   const backup = await buildBackup();
-  const file = new File(Paths.cache, `preemietrack-backup-${backup.exportedAt.slice(0, 10)}.json`);
+  const fileName = `preemietrack-backup-${backup.exportedAt.slice(0, 10)}.json`;
+  if (Platform.OS === 'web') {
+    // Web demo: no share sheet or app file system — hand the browser a download.
+    const url = URL.createObjectURL(new Blob([JSON.stringify(backup)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    return;
+  }
+  const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(backup));
@@ -92,7 +103,10 @@ export function pickAndImportBackup(): Promise<boolean> {
 
       let json: unknown;
       try {
-        json = await new File(picked.assets[0].uri).json();
+        json =
+          Platform.OS === 'web'
+            ? await (await fetch(picked.assets[0].uri)).json()
+            : await new File(picked.assets[0].uri).json();
         validateBackup(json);
       } catch (err) {
         Alert.alert('Could not read backup', err instanceof Error ? err.message : String(err));

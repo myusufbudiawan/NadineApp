@@ -1,3 +1,4 @@
+import '@/lib/webAlert';
 import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
 import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
 import { Stack } from 'expo-router';
@@ -10,7 +11,18 @@ import { ThemeProvider, useTheme } from '@/features/theme/ThemeProvider';
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
-import { OFFLINE_ONLY } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
+
+// The app is laid out for a phone — on a wide browser window, show it as a
+// phone-width column instead of stretching every card across the screen.
+const webFrame = {
+  flex: 1,
+  width: '100%',
+  maxWidth: 480,
+  alignSelf: 'center',
+  backgroundColor: colors.canvas,
+  boxShadow: '0 0 24px rgba(0, 0, 0, 0.08)',
+} as const;
 export default function RootLayout() {
   return (
     <ThemeProvider>
@@ -37,7 +49,7 @@ function RootNavigator() {
     return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
   }
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={WEB_DEMO ? webFrame : undefined}>
       <PhotoBlurProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.canvas } }}>
