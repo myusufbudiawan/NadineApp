@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react';
 import { router, useFocusEffect } from 'expo-router';
 import { Alert, Linking, Platform, Share, Switch, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import { ThemePref, useTheme } from '@/features/theme/ThemeProvider';
 import { Card } from '@/components/ui/Card';
 import { FormScreen } from '@/components/ui/Screen';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -36,6 +38,7 @@ function restartAtLaunch() {
 
 export default function Settings() {
   const { session } = useAuthSession();
+  const { pref, setPref } = useTheme();
   const [exporting, setExporting] = useState(false);
   const [pendingDeletion, setPendingDeletion] = useState<DeletionRequest>();
   const [requestingDeletion, setRequestingDeletion] = useState(false);
@@ -68,6 +71,17 @@ export default function Settings() {
   return (
     <FormScreen>
       <ScreenHeader title="Settings" back />
+
+      <Card style={{ gap: space.sm }}>
+        <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+          Appearance
+        </Text>
+        <SegmentedControl
+          options={['Auto', 'Light', 'Dark']}
+          value={pref[0].toUpperCase() + pref.slice(1)}
+          onChange={(v) => setPref(v.toLowerCase() as ThemePref)}
+        />
+      </Card>
 
       {!OFFLINE_ONLY && (
         <Card style={{ gap: space.sm }}>

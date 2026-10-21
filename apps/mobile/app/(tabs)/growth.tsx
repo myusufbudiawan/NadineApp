@@ -217,10 +217,10 @@ export default function Growth() {
               marginTop: 10,
             }}
           >
-            <Text style={[readingHeaderStyle, { width: 64 }]}>Date</Text>
-            <Text style={[readingHeaderStyle, { width: 64 }]}>PMA</Text>
-            <Text style={[readingHeaderStyle, { flex: 1 }]}>Value</Text>
-            <Text style={[readingHeaderStyle, { width: 50, textAlign: 'right' }]}>Δ</Text>
+            <Text style={[readingHeaderStyle(), { width: 64 }]}>Date</Text>
+            <Text style={[readingHeaderStyle(), { width: 64 }]}>PMA</Text>
+            <Text style={[readingHeaderStyle(), { flex: 1 }]}>Value</Text>
+            <Text style={[readingHeaderStyle(), { width: 50, textAlign: 'right' }]}>Δ</Text>
           </View>
           {[...measurements].reverse().map((m, i, arr) => {
             const daysOld = actualAge(new Date(profile.dateOfBirth), new Date(m.measuredAt)).totalDays;
@@ -238,16 +238,16 @@ export default function Growth() {
                   borderBottomColor: colors.line,
                 }}
               >
-                <Text style={[readingCellStyle, { width: 64 }]}>
+                <Text style={[readingCellStyle(), { width: 64 }]}>
                   {new Date(m.measuredAt).toLocaleDateString([], { day: 'numeric', month: 'short' })}
                 </Text>
-                <Text style={[readingCellStyle, { width: 64, color: colors.muted }]}>
+                <Text style={[readingCellStyle(), { width: 64, color: colors.muted }]}>
                   {pmaAge.weeks}w {pmaAge.days}d
                 </Text>
-                <Text style={[readingCellStyle, { flex: 1, fontFamily: type.fontBodyMedium }]}>
+                <Text style={[readingCellStyle(), { flex: 1, fontFamily: type.fontBodyMedium }]}>
                   {formatMeasurement(m.value)} {m.unit}
                 </Text>
-                <Text style={[readingCellStyle, { width: 50, textAlign: 'right', color: colors.accentStrong }]}>
+                <Text style={[readingCellStyle(), { width: 50, textAlign: 'right', color: colors.accentStrong }]}>
                   {delta === undefined ? '—' : `${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`}
                 </Text>
               </View>
@@ -259,13 +259,13 @@ export default function Growth() {
   );
 }
 
-const readingHeaderStyle = {
+const readingHeaderStyle = () => ({
   fontSize: 10,
   letterSpacing: 0.8,
   textTransform: 'uppercase' as const,
   color: colors.muted,
-};
-const readingCellStyle = {
+});
+const readingCellStyle = () => ({
   fontSize: 12,
   color: colors.text,
-};
+});

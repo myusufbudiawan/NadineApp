@@ -96,7 +96,7 @@ export default function Login() {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
-          style={inputStyle}
+          style={inputStyle()}
         />
         <TextInput
           accessibilityLabel="Password"
@@ -106,7 +106,7 @@ export default function Login() {
           autoComplete="password"
           value={password}
           onChangeText={setPassword}
-          style={inputStyle}
+          style={inputStyle()}
         />
       </View>
 
@@ -137,7 +137,7 @@ export default function Login() {
   );
 }
 
-const inputStyle = {
+const inputStyle = () => ({
   borderWidth: 1,
   borderColor: colors.line,
   borderRadius: radius.sm,
@@ -146,7 +146,7 @@ const inputStyle = {
   fontSize: type.body,
   color: colors.text,
   backgroundColor: colors.white,
-};
+});
 
 function friendlyMessage(message: string): string {
   if (/invalid login credentials/i.test(message)) return 'Incorrect email or password.';
