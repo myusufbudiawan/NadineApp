@@ -6,11 +6,21 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/lib/design-system/tokens';
 import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { CelebrationHost } from '@/components/celebration/CelebrationHost';
+import { ThemeProvider, useTheme } from '@/features/theme/ThemeProvider';
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
 import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 export default function RootLayout() {
+  return (
+    <ThemeProvider>
+      <RootNavigator />
+    </ThemeProvider>
+  );
+}
+
+function RootNavigator() {
+  const { scheme } = useTheme();
   // Drains the offline mutation queue on launch, on every foreground, and
   // on a background interval (Section 11 5.1) — mounted once at the root so
   // it runs regardless of which tab/screen is active. Every server route
@@ -29,8 +39,8 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <PhotoBlurProvider>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.canvas } }}>
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="baby-setup" />
           <Stack.Screen name="(tabs)" />

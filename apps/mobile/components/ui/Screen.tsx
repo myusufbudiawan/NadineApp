@@ -2,15 +2,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { PropsWithChildren } from 'react';
 import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/features/theme/ThemeProvider';
 import { useBabySex } from '@/features/baby-profile/useBabySex';
-import { colors, screenGradient, space } from '@/lib/design-system/tokens';
+import { colors, darkGradient, screenGradient, space } from '@/lib/design-system/tokens';
 
 // Wraps screen content in the sex-tinted background gradient (a soft blush
 // or soft blue fading into the same warm ground) when the baby's profile
 // has a sex set, falling back to the plain canvas color before then.
 function GradientGround({ style, children }: PropsWithChildren<Pick<ViewProps, 'style'>>) {
   const sex = useBabySex();
-  const gradientColors = sex === 'girl' ? screenGradient.girl : sex === 'boy' ? screenGradient.boy : undefined;
+  const gradients = useTheme().scheme === 'dark' ? darkGradient : screenGradient;
+  const gradientColors = sex ? gradients[sex] : undefined;
   if (!gradientColors) {
     return <View style={[{ backgroundColor: colors.canvas }, style]}>{children}</View>;
   }

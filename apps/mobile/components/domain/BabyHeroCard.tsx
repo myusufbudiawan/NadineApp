@@ -86,11 +86,11 @@ export function BabyHeroCard({
           style={{ position: 'absolute', inset: 0 }}
         />
         <View style={{ position: 'absolute', left: 16, right: 16, bottom: 12 }}>
-          <Text style={{ fontSize: 50, fontFamily: type.fontHeading, color: colors.white }}>
+          <Text style={{ fontSize: 50, fontFamily: type.fontHeading, color: '#ffffff' }}>
             {name}
           </Text>
           {bornSummary && (
-            <Text style={{ fontSize: 11, color: colors.white, opacity: 0.9, marginTop: 2 }}>
+            <Text style={{ fontSize: 11, color: '#ffffff', opacity: 0.9, marginTop: 2 }}>
               {bornSummary}
             </Text>
           )}
