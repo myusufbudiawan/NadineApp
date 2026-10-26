@@ -26,7 +26,14 @@ import { supabase } from '@/lib/supabase/client';
 import { eraseLocalData, exportBackup, pickAndImportBackup } from '@/lib/offline/backup';
 import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
 import { seedDemoData } from '@/lib/demo/seed';
+import { feedingIntervalPresets, FeedingReminderSettings } from '@/features/feeding-reminder/interval';
+import {
+  loadFeedingReminderSettings,
+  saveFeedingReminderSettings,
+} from '@/features/feeding-reminder/service';
 import appConfig from '../../app.json';
+
+const compactInterval = (minutes: number) => `${minutes / 60}h`;
 
 // After the local data is swapped out, re-run app/index.tsx's launch routing
 // from a clean history — so finishing onboarding/baby-setup afterwards lands
@@ -45,6 +52,18 @@ export default function Settings() {
   const [profile, setProfile] = useState<BabyProfile>();
   const [permission, setPermission] = useState<NotificationPermissionStatus>('undetermined');
   const [updatingPermission, setUpdatingPermission] = useState(false);
+  const [feedingReminder, setFeedingReminder] = useState<FeedingReminderSettings>({ enabled: false });
+
+  const updateFeedingReminder = async (next: FeedingReminderSettings) => {
+    const previous = feedingReminder;
+    setFeedingReminder(next);
+    try {
+      await saveFeedingReminderSettings(next);
+    } catch (error) {
+      setFeedingReminder(previous);
+      Alert.alert('Could not save feeding reminder', (error as Error).message);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -58,6 +77,9 @@ export default function Settings() {
       }
       loadBabyProfile(LOCAL_BABY_ID).then((p) => {
         if (active) setProfile(p);
+      });
+      loadFeedingReminderSettings().then((s) => {
+        if (active) setFeedingReminder(s);
       });
       notifications.getPermissionStatus().then((status) => {
         if (active) setPermission(status);
@@ -178,6 +200,37 @@ export default function Settings() {
         <Button variant="secondary" onPress={() => router.push('/more/reminders')}>
           Manage reminders
         </Button>
+      </Card>
+
+      <Card style={{ gap: space.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View style={{ flex: 1, paddingRight: space.sm }}>
+            <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
+              Feeding reminder
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: type.caption }}>
+              {feedingReminder.enabled
+                ? 'Remind me this long after each feeding.'
+                : 'Off — get a gentle nudge a set time after each feeding.'}
+            </Text>
+          </View>
+          <Switch
+            value={feedingReminder.enabled}
+            onValueChange={(enabled) => updateFeedingReminder({ ...feedingReminder, enabled })}
+          />
+        </View>
+        {feedingReminder.enabled && (
+          <SegmentedControl
+            options={feedingIntervalPresets.map(compactInterval)}
+            value={feedingReminder.intervalMinutes ? compactInterval(feedingReminder.intervalMinutes) : ''}
+            onChange={(label) =>
+              updateFeedingReminder({
+                ...feedingReminder,
+                intervalMinutes: feedingIntervalPresets.find((m) => compactInterval(m) === label),
+              })
+            }
+          />
+        )}
       </Card>
 
       {OFFLINE_ONLY ? (

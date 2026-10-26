@@ -6,6 +6,7 @@ import { LOCAL_BABY_ID } from '@/features/baby-profile/constants';
 import { loadDashboardMetrics, saveDashboardMetrics } from '@/features/dashboard/preferences';
 import { CareEventType } from '@/features/care-events/types';
 import { cancelReminderNotification } from '@/features/reminders/notifications';
+import { syncFeedingReminder } from '@/features/feeding-reminder/service';
 import { rescheduleEnabledReminders } from '@/features/reminders/storage';
 import { clearOnboarded } from '@/lib/auth/onboardingState';
 import { confirmDestructive } from '@/lib/confirm';
@@ -85,6 +86,7 @@ export async function importBackup(json: unknown): Promise<void> {
   for (const r of previousReminders)
     await cancelReminderNotification(r.notification_id ?? undefined);
   await rescheduleEnabledReminders(LOCAL_BABY_ID);
+  await syncFeedingReminder();
   if (backup.prefs?.dashboardMetrics) {
     await saveDashboardMetrics(backup.prefs.dashboardMetrics as CareEventType[]);
   }
@@ -149,6 +151,7 @@ export async function eraseLocalData(onErased: () => void) {
       const reminders = await listReminders(LOCAL_BABY_ID);
       for (const r of reminders) await cancelReminderNotification(r.notification_id ?? undefined);
       await resetLocalData();
+      await syncFeedingReminder();
       await clearOnboarded();
       onErased();
     },

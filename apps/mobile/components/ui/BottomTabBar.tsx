@@ -17,7 +17,7 @@ const labels: Record<string, string> = {
   more: 'More',
 };
 
-export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
+export function BottomTabBar({ state, emitter, navigateToTab }: BottomTabBarProps) {
   return (
     <View
       accessibilityRole="tablist"
@@ -35,9 +35,9 @@ export function BottomTabBar({ state, navigation }: BottomTabBarProps) {
         const label = labels[route.name] ?? route.name;
 
         const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
           if (!selected && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+            navigateToTab(route.key);
           }
         };
 
