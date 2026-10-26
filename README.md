@@ -10,13 +10,63 @@ Phase 0 (Foundation) and Phase 1 (Tracking) are implemented — see the [Changel
 
 No clinical reference thresholds, percentile curves, advice, or dosing logic have been added. The corrected-age reference is configurable and explicitly marked `NEEDS-CLINICAL-REVIEW`.
 
+## Tech Stack
+
+### Mobile App (apps/mobile)
+- **Framework:** Expo 57, React Native 0.86, React 19 (`apps/mobile/package.json`)
+- **Navigation:** Expo Router (file-based routing) (`apps/mobile/app/_layout.tsx`)
+- **Language:** TypeScript 6 (`apps/mobile/tsconfig.json`)
+- **Local Storage:** Expo SQLite (local-first persistence) (`apps/mobile/lib/offline/database.ts`)
+- **Secure Storage:** Expo SecureStore (session tokens, secrets) (`apps/mobile/lib/auth/session.ts`)
+- **Notifications:** Expo Notifications (local device notifications) (`apps/mobile/lib/notifications/index.ts`)
+- **Backend Client:** Supabase SDK (for API communication) (`apps/mobile/lib/supabase/client.ts`)
+- **Other Expo Modules:** image-picker, file-system, sharing, linear-gradient, local-authentication, document-picker, font, audio
+
+### Backend API (services/api)
+- **Framework:** Fastify 5 (`services/api/src/server.ts`)
+- **Runtime:** Node.js 20+ (`package.json`)
+- **Language:** TypeScript 7 (`services/api/tsconfig.json`)
+- **Database:** PostgreSQL (via `pg` driver) (`services/api/src/common/db/client.ts`)
+- **Validation:** Zod 4 (`services/api/package.json`)
+- **Testing:** Vitest 5 (`services/api/vitest.config.ts`)
+- **JWT:** jose 6 (`services/api/package.json`)
+
+### Development
+- **Package Manager:** npm workspaces (monorepo) (`package.json`)
+- **Code Quality:** ESLint, TypeScript (`apps/mobile/eslint.config.mjs`)
+- **Deployment:** Vercel (API), EAS (mobile builds) (`services/api/vercel.json`, `apps/mobile/eas.json`)
+- **CI/CD:** GitHub Actions (`.github/workflows/`)
+
 ## Structure
 
 ```
-apps/mobile/       Expo Router app, shared components, feature logic, local persistence
-services/api/      Fastify API, organized by domain
-  src/domains/     identity, baby-profile, care-events, growth, reminders, content,
-                   sharing, reports, sync, audit
+apps/mobile/                 Expo Router app
+  app/                       File-based routes (tab navigation, feature screens)
+  components/                Reusable UI components (domain-specific, shared)
+  features/                  Feature modules (baby-profile, care-events, growth, reminders)
+  lib/                       Shared utilities (offline storage, API client, age calculations)
+  __tests__/                 Custom test runners (age calculations, backup)
+
+services/api/                Fastify API
+  src/
+    domains/                 Domain-driven architecture
+      identity/              Authentication, account export/deletion
+      baby-profile/          Baby profile CRUD
+      care-events/           Care event logging (feeding, weight, diaper, sleep, temp, medication)
+      growth/                Growth measurements tracking
+      reminders/             Reminder scheduling and management
+      content/               Tips content pipeline
+      sharing/               Data sharing with caregivers
+      reports/               Report generation and export
+      sync/                  Offline-first sync engine
+      audit/                 Audit trail for all mutations
+    common/
+      db/                    Database migrations, connection
+      util/                  Shared utilities (age, timezone)
+      validation/            Shared schemas (baby, care events)
+  test/                      Vitest test suites
+
+package.json                 Root workspace configuration
 ```
 
 ## Prerequisites
