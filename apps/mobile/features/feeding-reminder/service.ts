@@ -23,6 +23,15 @@ export async function saveFeedingReminderSettings(settings: FeedingReminderSetti
 // ponytail: not unit-tested against real notifications (needs a device); the
 // timing logic lives in interval.ts. Upgrade path: inject a notifier.
 export async function syncFeedingReminder(): Promise<void> {
+  // A notification problem must never fail the feeding save that triggered it.
+  try {
+    await reschedule();
+  } catch (error) {
+    console.warn('Could not update the feeding reminder.', error);
+  }
+}
+
+async function reschedule(): Promise<void> {
   await cancelReminderNotification((await secureStoreAdapter.getItem(NOTIFICATION_KEY)) ?? undefined);
   await secureStoreAdapter.removeItem(NOTIFICATION_KEY);
 

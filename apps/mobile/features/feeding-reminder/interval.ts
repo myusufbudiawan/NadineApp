@@ -22,8 +22,7 @@ export function parseSettings(raw: string | null): FeedingReminderSettings {
 }
 
 export function intervalLabel(minutes: number): string {
-  const hours = minutes / 60;
-  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  return `${minutes / 60} hours`;
 }
 
 // When the reminder should fire, or undefined when there is nothing to schedule
