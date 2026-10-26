@@ -9,6 +9,7 @@ import {
   softDeleteCareEvent,
   updateCareEvent,
 } from '@/lib/offline/database';
+import { syncFeedingReminder } from '@/features/feeding-reminder/service';
 import { toServerEventData } from './serverPayload';
 import { CareEvent, CareEventData, CareEventType } from './types';
 import { validateCareEventData } from './validation';
@@ -66,6 +67,8 @@ export async function saveCareEvent(input: SaveCareEventInput): Promise<string> 
     }),
   );
 
+  if (input.type === 'feeding') await syncFeedingReminder();
+
   return id;
 }
 
@@ -110,6 +113,7 @@ export async function editCareEvent(
       expectedUpdatedAt: existing.server_updated_at ?? undefined,
     }),
   );
+  if (existing.type === 'feeding') await syncFeedingReminder();
 }
 
 export async function deleteCareEvent(id: string) {
@@ -122,4 +126,5 @@ export async function deleteCareEvent(id: string) {
     'care-event-delete',
     JSON.stringify({ id, babyId: existing.baby_id }),
   );
+  if (existing.type === 'feeding') await syncFeedingReminder();
 }
