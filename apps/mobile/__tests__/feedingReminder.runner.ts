@@ -1,7 +1,8 @@
 import { strict as assert } from 'node:assert';
 import { dueAt, intervalLabel, parseSettings } from '../features/feeding-reminder/interval.ts';
 
-// Anything missing, corrupt or not a known preset reads as "not configured".
+// Missing, corrupt or unknown-preset input reads as disabled (an enabled flag
+// without an interval is kept but schedules nothing).
 assert.deepEqual(parseSettings(null), { enabled: false });
 assert.deepEqual(parseSettings('not json'), { enabled: false });
 assert.deepEqual(parseSettings('{"enabled":true,"intervalMinutes":45}'), { enabled: false });

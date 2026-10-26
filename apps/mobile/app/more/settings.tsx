@@ -55,8 +55,14 @@ export default function Settings() {
   const [feedingReminder, setFeedingReminder] = useState<FeedingReminderSettings>({ enabled: false });
 
   const updateFeedingReminder = async (next: FeedingReminderSettings) => {
+    const previous = feedingReminder;
     setFeedingReminder(next);
-    await saveFeedingReminderSettings(next);
+    try {
+      await saveFeedingReminderSettings(next);
+    } catch (error) {
+      setFeedingReminder(previous);
+      Alert.alert('Could not save feeding reminder', (error as Error).message);
+    }
   };
 
   useFocusEffect(

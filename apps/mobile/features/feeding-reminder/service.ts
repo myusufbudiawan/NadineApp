@@ -19,16 +19,19 @@ export async function saveFeedingReminderSettings(settings: FeedingReminderSetti
 }
 
 // Re-derives the single pending notification from the latest non-deleted
-// feeding. Call after any feeding save/edit/delete and any settings change.
+// feeding. Call after any feeding save/edit/delete, settings change, and backup import/erase.
 // ponytail: not unit-tested against real notifications (needs a device); the
 // timing logic lives in interval.ts. Upgrade path: inject a notifier.
-export async function syncFeedingReminder(): Promise<void> {
-  // A notification problem must never fail the feeding save that triggered it.
-  try {
-    await reschedule();
-  } catch (error) {
+// Calls are chained so overlapping triggers (a quick switch then interval tap,
+// or a feeding save during a settings change) can't both schedule and orphan one.
+let chain: Promise<void> = Promise.resolve();
+
+export function syncFeedingReminder(): Promise<void> {
+  chain = chain.then(reschedule).catch((error) => {
+    // A notification problem must never fail the feeding save that triggered it.
     console.warn('Could not update the feeding reminder.', error);
-  }
+  });
+  return chain;
 }
 
 async function reschedule(): Promise<void> {
