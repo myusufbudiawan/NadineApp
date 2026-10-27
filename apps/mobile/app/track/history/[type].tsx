@@ -107,6 +107,11 @@ export default function CareEventHistory() {
       <Button onPress={() => router.push(config.route as never)} style={{ borderRadius: radius.sm }}>
         Add {config.title}
       </Button>
+      {type === 'feeding' && (
+        <Button variant="secondary" onPress={() => router.push('/more/settings?focus=feeding-reminder')}>
+          Set feeding reminder
+        </Button>
+      )}
     </FormScreen>
   );
 }

@@ -22,8 +22,8 @@ export const useTheme = () => useContext(ThemeContext);
 
 // Mounted once at the root. The scheme is derived here (react-native-web ignores
 // Appearance.setColorScheme); the native call keeps Switch/keyboard/alerts in step.
-// `colors` is swapped in place during render, then the subtree remounts on
-// scheme change so every `colors.x` read picks up the new palette.
+// `colors` is swapped in place during render; navigators wrap their screens in
+// ThemedScreen so each screen remounts and re-reads `colors.x`.
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [pref, setPrefState] = useState<ThemePref>('auto');
   const system = useColorScheme();
@@ -50,7 +50,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ pref, scheme, setPref }}>
-      <Fragment key={scheme}>{children}</Fragment>
+      {children}
     </ThemeContext.Provider>
   );
+}
+
+// Use as a navigator's `screenLayout`. Remounts the screen (not the navigator,
+// which would reset navigation back to `/`) when the scheme flips.
+export function ThemedScreen({ children }: { children: ReactNode }) {
+  return <Fragment key={useTheme().scheme}>{children}</Fragment>;
 }

@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { PropsWithChildren } from 'react';
-import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, View, ViewProps } from 'react-native';
+import { PropsWithChildren, Ref } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, ScrollViewInstance, View, ViewProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/features/theme/ThemeProvider';
 import { useBabySex } from '@/features/baby-profile/useBabySex';
@@ -58,12 +58,13 @@ export function TabScreen({
 // Scrolls (content used to be clipped when it overflowed, e.g. long More
 // pages) and rides up above the keyboard on iOS so a lower field never sits
 // hidden behind it.
-export function FormScreen({ children }: PropsWithChildren) {
+export function FormScreen({ children, ref }: PropsWithChildren<{ ref?: Ref<ScrollViewInstance> }>) {
   const insets = useSafeAreaInsets();
   return (
     <GradientGround style={{ flex: 1 }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
+          ref={ref}
           contentContainerStyle={{
             flexGrow: 1,
             paddingTop: insets.top + space.lg,

@@ -38,7 +38,7 @@ export function getDashboardMetricView(
         value: summary?.weight.hasAny ? formatMeasurement(summary.weight.value!) : '—',
         unit: summary?.weight.hasAny ? summary?.weight.unit : undefined,
         caption: summary?.weight.hasAny ? summary!.weight.deltaCaption! : 'No weight logged yet',
-        route: '/track/add-weight',
+        route: '/track/history/weight',
       };
     case 'feeding':
       return {
@@ -51,7 +51,7 @@ export function getDashboardMetricView(
         caption: summary?.feeding.hasAny
           ? `${summary.feeding.todayCount} feeds today`
           : 'No feeding logged yet',
-        route: '/track/add-feeding',
+        route: '/track/history/feeding',
       };
     case 'sleep':
       return {
@@ -61,7 +61,7 @@ export function getDashboardMetricView(
         title: 'Sleep',
         value: summary?.sleep.hasAny ? formatDuration(summary.sleep.todayTotalMinutes) : '—',
         caption: summary?.sleep.hasAny ? 'Total sleep today' : 'No sleep logged yet',
-        route: '/track/add-sleep',
+        route: '/track/history/sleep',
       };
     case 'diaper':
       return {
@@ -73,7 +73,7 @@ export function getDashboardMetricView(
         caption: summary?.diaper.hasAny
           ? `Wet ${summary.diaper.wet} / Dirty ${summary.diaper.dirty}`
           : 'No diaper logged yet',
-        route: '/track/add-diaper',
+        route: '/track/history/diaper',
       };
     case 'kangaroo':
       return {
@@ -85,7 +85,7 @@ export function getDashboardMetricView(
         caption: summary?.kangaroo.hasAny
           ? 'Total kangaroo care today'
           : 'No kangaroo care logged yet',
-        route: '/track/add-kangaroo',
+        route: '/track/history/kangaroo',
       };
     default:
       throw new Error(`No dashboard metric view for type ${type}`);

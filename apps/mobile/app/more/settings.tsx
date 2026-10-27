@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
-import { router, useFocusEffect } from 'expo-router';
-import { Alert, Linking, Platform, Share, Switch, Text, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Alert, Linking, Platform, ScrollViewInstance, Share, Switch, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { ThemePref, useTheme } from '@/features/theme/ThemeProvider';
@@ -46,6 +46,9 @@ function restartAtLaunch() {
 export default function Settings() {
   const { session } = useAuthSession();
   const { pref, setPref } = useTheme();
+  // Set by links that open a specific setting (e.g. feeding history's reminder button).
+  const focusFeeding = useLocalSearchParams<{ focus?: string }>().focus === 'feeding-reminder';
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [exporting, setExporting] = useState(false);
   const [pendingDeletion, setPendingDeletion] = useState<DeletionRequest>();
   const [requestingDeletion, setRequestingDeletion] = useState(false);
@@ -91,7 +94,7 @@ export default function Settings() {
   );
 
   return (
-    <FormScreen>
+    <FormScreen ref={scrollRef}>
       <ScreenHeader title="Settings" back />
 
       <Card style={{ gap: space.sm }}>
@@ -202,7 +205,14 @@ export default function Settings() {
         </Button>
       </Card>
 
-      <Card style={{ gap: space.sm }}>
+      <Card
+        style={{ gap: space.sm }}
+        pulse={focusFeeding}
+        // Re-fires while cards above finish loading, so it lands on the final position.
+        onLayout={(e) =>
+          focusFeeding && scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y - space.lg })
+        }
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1, paddingRight: space.sm }}>
             <Text style={{ fontSize: type.label, fontFamily: type.fontBodyMedium, color: colors.text }}>
