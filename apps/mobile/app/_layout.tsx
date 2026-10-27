@@ -1,13 +1,13 @@
 import '@/lib/webAlert';
 import { CormorantGaramond_600SemiBold } from '@expo-google-fonts/cormorant-garamond';
 import { Lora_400Regular, Lora_600SemiBold, useFonts } from '@expo-google-fonts/lora';
-import { Stack } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors } from '@/lib/design-system/tokens';
 import { KeyboardDoneBar } from '@/components/ui/KeyboardDoneBar';
 import { CelebrationHost } from '@/components/celebration/CelebrationHost';
-import { ThemeProvider, useTheme } from '@/features/theme/ThemeProvider';
+import { ThemedScreen, ThemeProvider, useTheme } from '@/features/theme/ThemeProvider';
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
@@ -20,7 +20,6 @@ const webFrame = {
   width: '100%',
   maxWidth: 480,
   alignSelf: 'center',
-  backgroundColor: colors.canvas,
   boxShadow: '0 0 24px rgba(0, 0, 0, 0.08)',
 } as const;
 export default function RootLayout() {
@@ -45,58 +44,25 @@ function RootNavigator() {
     Lora_400Regular,
     Lora_600SemiBold,
   });
+  const navTheme = scheme === 'dark' ? DarkTheme : DefaultTheme;
   if (!fontsLoaded) {
     return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
   }
   return (
-    <SafeAreaProvider style={WEB_DEMO ? webFrame : undefined}>
+    <SafeAreaProvider style={[WEB_DEMO && webFrame, { backgroundColor: colors.canvas }]}>
       <PhotoBlurProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: colors.canvas } }}>
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="baby-setup" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="track/add-feeding"
-            options={{ presentation: 'card' }}
+        {/* The navigation theme paints every Stack card and Tabs scene, so no
+            default-white background shows through during transitions. */}
+        <NavThemeProvider value={{ ...navTheme, colors: { ...navTheme.colors, background: colors.canvas } }}>
+          <Stack
+            screenOptions={{ headerShown: false, animation: 'fade' }}
+            // (tabs) remounts its own screens instead, so the active tab survives a scheme change.
+            screenLayout={({ route, children }) =>
+              route.name === '(tabs)' ? children : <ThemedScreen>{children}</ThemedScreen>
+            }
           />
-          <Stack.Screen
-            name="track/add-weight"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-diaper"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-sleep"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-temperature"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-medication"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-note"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/add-growth"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="track/history/[type]"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen name="more/reminders" options={{ presentation: 'card' }} />
-          <Stack.Screen name="more/add-reminder" options={{ presentation: 'card' }} />
-          <Stack.Screen name="more/sync-conflicts" options={{ presentation: 'card' }} />
-          <Stack.Screen name="more/milestones" options={{ presentation: 'card' }} />
-        </Stack>
+        </NavThemeProvider>
         <KeyboardDoneBar />
         {/* Milestone celebrations play over the whole app, whatever screen is up. */}
         <CelebrationHost />
