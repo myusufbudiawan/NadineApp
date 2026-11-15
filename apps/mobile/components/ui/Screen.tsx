@@ -4,24 +4,37 @@ import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, ScrollViewI
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/features/theme/ThemeProvider';
 import { useBabySex } from '@/features/baby-profile/useBabySex';
+import { useColumn } from '@/lib/design-system/useColumn';
 import { colors, darkGradient, screenGradient, space } from '@/lib/design-system/tokens';
+
+// On a wide screen the tint is a top wash rather than a corner-to-corner ramp,
+// so it stays symmetric around the column and clears the content sooner.
+const wideGradientLocations = [0, 0.22, 0.5] as const;
 
 // Wraps screen content in the sex-tinted background gradient (a soft blush
 // or soft blue fading into the same warm ground) when the baby's profile
 // has a sex set, falling back to the plain canvas color before then.
+//
+// The gradient fills the whole viewport — only the content column inside it
+// narrows on a wide browser — so the web demo reads as one page instead of a
+// phone mock-up sitting on a separate background.
 function GradientGround({ style, children }: PropsWithChildren<Pick<ViewProps, 'style'>>) {
   const sex = useBabySex();
   const gradients = useTheme().scheme === 'dark' ? darkGradient : screenGradient;
   const gradientColors = sex ? gradients[sex] : undefined;
+  const { isWide } = useColumn();
   if (!gradientColors) {
     return <View style={[{ backgroundColor: colors.canvas }, style]}>{children}</View>;
   }
   return (
     <LinearGradient
       colors={gradientColors}
-      locations={screenGradient.locations}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      // A phone-sized screen is tinted corner to corner; a wide one reads
+      // better tinted top-down, so the wash stays symmetric either side of the
+      // content column instead of hugging the left edge.
+      locations={isWide ? wideGradientLocations : screenGradient.locations}
+      start={isWide ? { x: 0.5, y: 0 } : { x: 0, y: 0 }}
+      end={isWide ? { x: 0.5, y: 1 } : { x: 1, y: 1 }}
       style={style}
     >
       {children}
@@ -35,10 +48,21 @@ export function TabScreen({
   onRefresh,
 }: PropsWithChildren<{ refreshing?: boolean; onRefresh?: () => void }>) {
   const insets = useSafeAreaInsets();
+  const { maxWidth, gutter } = useColumn();
   return (
     <GradientGround style={{ flex: 1 }}>
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingTop: insets.top + 20, gap: 18 }}
+        contentContainerStyle={{
+          width: '100%',
+          maxWidth,
+          alignSelf: 'center',
+          padding: gutter,
+          paddingTop: insets.top + gutter,
+          // Room at the end of the scroll so the last card never sits flush
+          // against the tab bar.
+          paddingBottom: insets.bottom + gutter + space.sm,
+          gap: space.lg,
+        }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           onRefresh ? (
@@ -60,6 +84,7 @@ export function TabScreen({
 // hidden behind it.
 export function FormScreen({ children, ref }: PropsWithChildren<{ ref?: Ref<ScrollViewInstance> }>) {
   const insets = useSafeAreaInsets();
+  const { maxWidth, gutter } = useColumn();
   return (
     <GradientGround style={{ flex: 1 }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -67,8 +92,11 @@ export function FormScreen({ children, ref }: PropsWithChildren<{ ref?: Ref<Scro
           ref={ref}
           contentContainerStyle={{
             flexGrow: 1,
+            width: '100%',
+            maxWidth,
+            alignSelf: 'center',
             paddingTop: insets.top + space.lg,
-            paddingHorizontal: space.xl,
+            paddingHorizontal: Math.max(gutter, space.lg),
             paddingBottom: insets.bottom + space.lg,
             gap: space.lg,
           }}

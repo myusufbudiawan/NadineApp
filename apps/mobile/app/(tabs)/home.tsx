@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Image, LayoutAnimation, Modal, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Image, LayoutAnimation, Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { BabyHeroCard } from '@/components/domain/BabyHeroCard';
 import { DemoBanner } from '@/components/domain/DemoBanner';
 import { EncouragementCard } from '@/components/domain/EncouragementCard';
@@ -31,7 +31,7 @@ import { hydrateFromServer } from '@/lib/offline/hydrate';
 import { getServerBabyId } from '@/lib/offline/serverBaby';
 import { runSync } from '@/lib/offline/sync';
 import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
-import { colors, type } from '@/lib/design-system/tokens';
+import { colors, numerals, type } from '@/lib/design-system/tokens';
 import { uploadBabyPhoto } from '@/lib/supabase/storage';
 import { useBabyPhotoUrl } from '@/features/baby-profile/useBabyPhotoUrl';
 import { formatMeasurement } from '@/lib/format';
@@ -80,6 +80,14 @@ function formatDueLabel(date: Date, now: Date) {
   if (minutes < 60) return `in ${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.round(minutes / 60);
   return `in ${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
+// The dashboard tiles are fixed-size cards; two to a row is what the column
+// width can carry without clipping a value like "1h 54m".
+function chunk<T>(items: T[], size: number): T[][] {
+  const rows: T[][] = [];
+  for (let i = 0; i < items.length; i += size) rows.push(items.slice(i, i + size));
+  return rows;
 }
 
 export default function Home() {
@@ -234,17 +242,21 @@ export default function Home() {
         >
           <View>
             <Text
+              role="heading"
+              aria-level={1}
               style={{ color: colors.text, fontSize: type.title, fontFamily: type.fontHeading }}
             >
               {getGreeting()}
             </Text>
           </View>
-          <Ionicons
-            accessibilityLabel="Notifications"
-            name="notifications-outline"
-            size={22}
-            color={colors.text}
-          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reminders"
+            onPress={() => router.push('/more/reminders')}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.text} />
+          </Pressable>
         </View>
         <Card style={{ alignItems: 'center', gap: 8, padding: 24 }}>
           <Ionicons name="person-add-outline" size={32} color={colors.pink} />
@@ -326,6 +338,8 @@ export default function Home() {
       >
         <View>
           <Text
+            role="heading"
+            aria-level={1}
             style={{
               color: colors.text,
               fontSize: type.title,
@@ -335,12 +349,14 @@ export default function Home() {
             {getGreeting()}
           </Text>
         </View>
-        <Ionicons
-          accessibilityLabel="Notifications"
-          name="notifications-outline"
-          size={22}
-          color={colors.text}
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Reminders"
+          onPress={() => router.push('/more/reminders')}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name="notifications-outline" size={22} color={colors.text} />
+        </Pressable>
       </View>
       {WEB_DEMO && <DemoBanner />}
       <BabyHeroCard
@@ -382,8 +398,8 @@ export default function Home() {
       {pma && (
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 11, color: colors.muted }}>{pma.label}</Text>
-            <Text style={{ fontSize: 11, color: colors.muted }}>Due at {pma.fullTermWeeks}w</Text>
+            <Text style={{ fontSize: type.micro, color: colors.muted }}>{pma.label}</Text>
+            <Text style={{ fontSize: type.micro, color: colors.muted }}>Due at {pma.fullTermWeeks}w</Text>
           </View>
           <View
             style={{
@@ -406,23 +422,21 @@ export default function Home() {
         />
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
-          Today
-        </Text>
+        <Text style={{ fontSize: 17, fontFamily: type.fontHeading, color: colors.text }}>Today</Text>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 10 }}>
           <Text
             accessibilityRole="link"
             onPress={() => router.push('/more/customize-dashboard')}
-            style={{ fontSize: 11, color: colors.accentStrong }}
+            style={{ fontSize: type.micro, color: colors.accentDeep }}
           >
             Customize
           </Text>
-          <Text style={{ fontSize: 11, color: colors.faint }}>since midnight</Text>
+          <Text style={{ fontSize: type.micro, color: colors.muted }}>since midnight</Text>
         </View>
       </View>
-      {[0, 2].map((rowStart) => (
-        <View key={rowStart} style={{ flexDirection: 'row', gap: 10 }}>
-          {dashboardMetrics.slice(rowStart, rowStart + 2).map((metricType) => {
+      {chunk(dashboardMetrics, 2).map((rowMetrics, rowIndex) => (
+        <View key={rowIndex} style={{ flexDirection: 'row', gap: 10 }}>
+          {rowMetrics.map((metricType) => {
             const metric = getDashboardMetricView(metricType, summary);
             return (
               <MetricCard
@@ -450,13 +464,13 @@ export default function Home() {
               paddingTop: 18,
             }}
           >
-            <Text style={{ fontSize: 16, fontFamily: type.fontHeading, color: colors.text }}>
+            <Text style={{ fontSize: 17, fontFamily: type.fontHeading, color: colors.text }}>
               Next due
             </Text>
             <Text
               accessibilityRole="link"
               onPress={() => router.push('/more/reminders')}
-              style={{ fontSize: 11, color: colors.accentStrong }}
+              style={{ fontSize: type.micro, color: colors.accentDeep }}
             >
               All reminders
             </Text>
@@ -478,16 +492,17 @@ export default function Home() {
                   fontSize: 15,
                   fontFamily: type.fontHeading,
                   color: colors.text,
-                  width: 48,
+                  width: 64,
+                  ...numerals,
                 }}
               >
                 {r.nextFiresAt?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, fontFamily: type.fontBodyMedium, color: colors.text }}>
+                <Text style={{ fontSize: type.small, fontFamily: type.fontBodyMedium, color: colors.text }}>
                   {r.title}
                 </Text>
-                <Text style={{ fontSize: 11, color: colors.faint, marginTop: 2 }}>
+                <Text style={{ fontSize: type.micro, color: colors.muted, marginTop: 2 }}>
                   {reminderTypeLabels[r.type]} · {r.nextFiresAt ? formatDueLabel(r.nextFiresAt, new Date()) : ''}
                 </Text>
               </View>

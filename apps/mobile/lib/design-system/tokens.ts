@@ -21,8 +21,10 @@ export const palettes = {
     canvas: '#fcfcfb',
     surface: '#ffffff',
     text: '#201f1d',
-    muted: '#7d7979',
-    faint: '#9b9797',
+    // Darkened so small text clears WCAG AA on every ground it lands on:
+    // muted 4.19 -> 5.51, faint 2.81 -> 4.60 (both against canvas).
+    muted: '#6b6664',
+    faint: '#75706d',
     line: '#eae7e7',
     divider: 'rgba(32,31,29,0.16)',
     accent: '#b68235',
@@ -39,7 +41,7 @@ export const palettes = {
     surface: '#1e1d1b',
     text: '#f1efec',
     muted: '#a29e9a',
-    faint: '#7d7976',
+    faint: '#8b8783',
     line: '#34312f',
     divider: 'rgba(241,239,236,0.18)',
     accent: '#d4a24f',
@@ -76,6 +78,12 @@ export const type = {
   label: 14,
   title: 26,
   display: 32,
+  // The two sizes the screens had been hard-coding: uppercase micro labels
+  // (was 10px, unreadable and under the contrast floor) and dense secondary
+  // copy (was 11px). Nothing below 12px ships.
+  micro: 12,
+  small: 13.5,
+  capsSpacing: 0.9,
   fontHeading: 'CormorantGaramond_600SemiBold',
   fontBody: 'Lora_400Regular',
   fontBodyMedium: 'Lora_600SemiBold',
@@ -86,4 +94,29 @@ export const shadow = {
   shadowRadius: 2,
   shadowOffset: { width: 0, height: 1 },
   elevation: 1,
+} as const;
+
+// One easing set for the whole app: pressed states snap, anything entering
+// eases out. Pairs with `prefers-reduced-motion` via RN's own reduceMotion
+// handling — no keyframe animation bypasses it.
+export const motion = {
+  press: 120,
+  enter: 200,
+  easeOut: [0.2, 0.8, 0.2, 1] as const,
+} as const;
+
+// Web demo shell. The app is laid out for a phone; on a browser it gets a
+// single centred column that widens once there is room, instead of a phone
+// frame floating in empty space.
+// Cormorant's default '1' is a bare stem, so "1h 54m" reads as "lh 54m" and
+// "11" as "II". Numerals are the content of this app, so every heading-family
+// number opts into lining figures (`lnum` on web, iOS default on native).
+export const numerals = { fontVariant: ['lining-nums'] as const };
+
+export const layout = {
+  columnMax: 520,
+  columnMaxWide: 720,
+  wideBreakpoint: 1024,
+  gutter: 20,
+  gutterWide: 32,
 } as const;

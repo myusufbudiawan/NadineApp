@@ -11,17 +11,12 @@ import { ThemedScreen, ThemeProvider, useTheme } from '@/features/theme/ThemePro
 import { PhotoBlurProvider } from '@/features/privacy/PhotoBlurContext';
 import { useAuthSession } from '@/hooks/useAuthSession';
 import { useSync } from '@/hooks/useSync';
-import { OFFLINE_ONLY, WEB_DEMO } from '@/lib/offlineOnly';
+import { OFFLINE_ONLY } from '@/lib/offlineOnly';
 
-// The app is laid out for a phone — on a wide browser window, show it as a
-// phone-width column instead of stretching every card across the screen.
-const webFrame = {
-  flex: 1,
-  width: '100%',
-  maxWidth: 480,
-  alignSelf: 'center',
-  boxShadow: '0 0 24px rgba(0, 0, 0, 0.08)',
-} as const;
+// The app is laid out for a phone. On the web demo the *content* narrows to a
+// readable column (components/ui/Screen.tsx) while the tinted ground runs edge
+// to edge, so a wide browser gets a designed page rather than a phone frame
+// floating in an empty field.
 export default function RootLayout() {
   return (
     <ThemeProvider>
@@ -49,7 +44,7 @@ function RootNavigator() {
     return <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }} />;
   }
   return (
-    <SafeAreaProvider style={[WEB_DEMO && webFrame, { backgroundColor: colors.canvas }]}>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: colors.canvas }}>
       <PhotoBlurProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         {/* The navigation theme paints every Stack card and Tabs scene, so no

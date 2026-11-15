@@ -4,9 +4,35 @@
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="PreemieTrack demo — a calm place to track a premature baby's care and growth. Runs entirely in your browser." />
-    <meta name="theme-color" content="#f8f7f6" />
-    <title>PreemieTrack Demo</title>
+    <meta
+      name="description"
+      content="PreemieTrack demo — a calm place to track a premature baby's care and growth. Runs entirely in your browser."
+    />
+    <meta name="theme-color" content="#fcfcfb" />
+    <meta name="color-scheme" content="light dark" />
+    <title>PreemieTrack — a calm tracker for preemie care</title>
+
+    <!-- Link preview: this demo gets shared in care groups and forums far more
+         often than it is discovered, so the card is not optional. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="PreemieTrack" />
+    <meta property="og:title" content="PreemieTrack — a calm tracker for preemie care" />
+    <meta
+      property="og:description"
+      content="Track feeds, weight and growth against a corrected-age reference. A no-account web demo that runs entirely in your browser."
+    />
+    <meta property="og:image" content="/og-demo.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="PreemieTrack: a calm, private log for preemie care." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PreemieTrack — a calm tracker for preemie care" />
+    <meta
+      name="twitter:description"
+      content="Track feeds, weight and growth against a corrected-age reference. A no-account web demo that runs entirely in your browser."
+    />
+    <meta name="twitter:image" content="/og-demo.png" />
+
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
       /* These styles make the body full-height */
@@ -17,8 +43,17 @@
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
-        /* Shows either side of the phone-width app column on wide screens (app/_layout.tsx). */
-        background-color: #ece7e2;
+        /* The paper ground the app sits on — the same warm canvas the screens
+           paint, so first paint and loaded app agree instead of flashing
+           white behind the phone column. */
+        background-color: #fcfcfb;
+        background-image: linear-gradient(160deg, #f7efe6 0%, #fcfcfb 55%, #fbf7f2 100%);
+        color: #201f1d;
+        /* Fallback only: every Text carries the app's own font family. */
+        font-family: Lora, Georgia, 'Times New Roman', serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overscroll-behavior: none;
       }
       /* These styles make the root element full-height */
       #root {
@@ -26,14 +61,97 @@
         height: 100%;
         flex: 1;
       }
+      /* Keyboard users get a ring on every interactive element: react-native-web
+         leaves `outline: none` on its Pressables, which made the demo
+         unnavigable without a mouse. */
+      [role='button']:focus-visible,
+      [role='tab']:focus-visible,
+      [role='link']:focus-visible,
+      a:focus-visible,
+      [tabindex='0']:focus-visible {
+        outline: 2px solid #7d5411;
+        outline-offset: 2px;
+        border-radius: 3px;
+      }
+      /* The app scrolls inside a ScrollView, so this is the scrollbar people
+         actually see: keep it quiet and warm instead of the OS default. */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(32, 31, 29, 0.28) transparent;
+      }
+      *::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      *::-webkit-scrollbar-thumb {
+        background-color: rgba(32, 31, 29, 0.24);
+        border: 3px solid transparent;
+        border-radius: 999px;
+        background-clip: content-box;
+      }
+      *::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(32, 31, 29, 0.4);
+      }
+      *::-webkit-scrollbar-track {
+        background: transparent;
+      }
     </style>
   </head>
 
   <body>
     <noscript>
-      You need to enable JavaScript to run this app.
+      <div
+        style="
+          max-width: 34rem;
+          margin: 12vh auto;
+          padding: 0 1.5rem;
+          line-height: 1.6;
+          color: #201f1d;
+        "
+      >
+        <h1 style="font-family: Georgia, serif; font-weight: 600">PreemieTrack demo</h1>
+        <p>
+          This demo runs entirely in your browser, so it needs JavaScript turned on. Nothing is
+          uploaded either way — there is no server to upload to.
+        </p>
+      </div>
     </noscript>
     <!-- The root element for your Expo app. -->
-    <div id="root"></div>
+    <main id="root">
+      <!-- Branded first paint. The bundle is ~570 kB, which is several seconds
+           on a phone connection; React replaces this subtree as soon as the app
+           mounts, so it only ever shows while the demo is loading. -->
+      <div
+        style="
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 2rem;
+          text-align: center;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.6rem;
+            color: #201f1d;
+          "
+        >
+          <span
+            style="width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #b68235"
+          ></span>
+          PreemieTrack
+        </div>
+        <p style="margin: 0; font-size: 0.9rem; color: #6b6664; max-width: 22rem">
+          Loading the demo. Feeding, weight and growth, kept in this browser.
+        </p>
+      </div>
+    </main>
   </body>
 </html>

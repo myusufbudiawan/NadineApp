@@ -73,7 +73,7 @@ export function MilestoneCard({
         />
       </View>
       <View style={{ flex: 1, gap: 3 }}>
-        <Text style={{ fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: colors.accentStrong }}>
+        <Text style={{ fontSize: type.micro, letterSpacing: 1.2, textTransform: 'uppercase', color: colors.accentDeep }}>
           {latest ? `Latest milestone · ${relativeDay(records[latest.id]!.achievedAt)}` : 'Milestones'}
         </Text>
         <Text style={{ fontFamily: type.fontHeading, fontSize: 18, color: colors.text }}>

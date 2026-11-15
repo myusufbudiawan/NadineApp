@@ -18,14 +18,14 @@ export function Button({
 }) {
   const borderColor =
     variant === 'destructive' ? colors.danger : variant === 'secondary' ? colors.divider : colors.accent;
-  const fg = variant === 'destructive' ? colors.danger : colors.accent;
+  const fg = variant === 'destructive' ? colors.danger : colors.accentDeep;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={(state) => [
         {
           minHeight: 44,
           paddingHorizontal: space.lg,
@@ -34,7 +34,10 @@ export function Button({
           borderRadius: radius.md,
           borderWidth: 1,
           borderColor: disabled ? colors.line : borderColor,
-          backgroundColor: pressed && !disabled ? colors.accentSoft : 'transparent',
+          backgroundColor:
+            (state.pressed || (state as { hovered?: boolean }).hovered) && !disabled
+              ? colors.accentSoft
+              : 'transparent',
         },
         style,
       ]}
