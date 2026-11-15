@@ -33,8 +33,8 @@ export default function Track() {
   return (
     <TabScreen>
       <ScreenHeader title="Track" />
-      <Text style={{ fontSize: 12, color: colors.muted, marginTop: -8 }}>
-        Tap a row to see history, or the + to log now.
+      <Text style={{ fontSize: type.small, color: colors.muted, marginTop: -8 }}>
+        Select a row to see history, or use its + to log now.
       </Text>
       <View style={{ borderTopWidth: 1, borderTopColor: colors.divider }}>
         {careEventRows.map((row) => {
@@ -60,20 +60,20 @@ export default function Track() {
                 accessibilityLabel={`Log ${row.title.toLowerCase()} now`}
                 onPress={() => router.push(row.route as never)}
                 style={{
-                  width: 36,
+                  width: 44,
                   alignItems: 'center',
                   justifyContent: 'center',
                   borderBottomWidth: 1,
                   borderBottomColor: colors.line,
                 }}
               >
-                <Ionicons name="add" size={20} color={colors.accentStrong} />
+                <Ionicons name="add" size={20} color={colors.accentDeep} />
               </Pressable>
             </View>
           );
         })}
       </View>
-      <Text style={{ fontSize: 11, color: colors.faint, lineHeight: 17 }}>
+      <Text style={{ fontSize: type.micro, color: colors.muted, lineHeight: 18 }}>
         {OFFLINE_ONLY
           ? 'Entries are saved only on this device.'
           : "Entries save on this device first and sync when you're back online."}

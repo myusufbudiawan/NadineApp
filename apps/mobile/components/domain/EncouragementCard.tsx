@@ -23,10 +23,10 @@ export function EncouragementCard({
       <View style={{ flex: 1 }}>
         <Text
           style={{
-            fontSize: 10,
-            letterSpacing: 0.8,
+            fontSize: type.micro,
+            letterSpacing: type.capsSpacing,
             textTransform: 'uppercase',
-            color: colors.accent,
+            color: colors.accentDeep,
           }}
         >
           {title}

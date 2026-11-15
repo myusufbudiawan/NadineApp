@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { IconChip } from '@/components/ui/IconChip';
-import { colors, type } from '@/lib/design-system/tokens';
+import { colors, numerals, type } from '@/lib/design-system/tokens';
 export function MetricCard({
   icon,
   tone,
@@ -19,29 +19,33 @@ export function MetricCard({
   onPress?: () => void;
 }) {
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={onPress}
       disabled={!onPress}
-      activeOpacity={onPress ? 0.7 : 1}
       accessibilityRole={onPress ? 'button' : undefined}
-      style={{ flex: 1 }}
+      style={(state) => ({
+        flex: 1,
+        // The card paints its own surface, so press feedback rides on the
+        // wrapper rather than fighting Card's border animation.
+        opacity: state.pressed ? 0.85 : 1,
+      })}
     >
       <Card style={{ padding: 12, minHeight: 96 }}>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <IconChip icon={icon} tone={tone} size={34} label="" />
-          <Text style={{ fontSize: 24, fontFamily: type.fontHeading, color: colors.text }}>
+          <Text style={{ fontSize: 24, fontFamily: type.fontHeading, color: colors.text, ...numerals }}>
             {value}
             {unit && (
-              <Text style={{ fontSize: 12, fontFamily: type.fontBody }}> {unit}</Text>
+              <Text style={{ fontSize: type.caption, fontFamily: type.fontBody }}> {unit}</Text>
             )}
           </Text>
         </View>
         <Text
-          style={{ marginTop: 10, fontSize: type.caption, color: colors.muted, fontFamily: type.fontBody }}
+          style={{ marginTop: 10, fontSize: type.micro, color: colors.muted, fontFamily: type.fontBody, lineHeight: 17 }}
         >
           {caption}
         </Text>
       </Card>
-    </TouchableOpacity>
+    </Pressable>
   );
 }

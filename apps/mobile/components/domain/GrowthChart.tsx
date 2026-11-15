@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, Text, View } from 'react-native';
-import { colors, type } from '@/lib/design-system/tokens';
+import { colors, numerals, type } from '@/lib/design-system/tokens';
 import { formatMeasurement } from '@/lib/format';
 
 export type GrowthChartPoint = { ageWeeks: number; value: number };
 export type GrowthChartBand = { low: number; mid: number; high: number };
 
-const Y_AXIS_GUTTER = 34;
+const Y_AXIS_GUTTER = 40;
 const BAND_STRIP_COUNT = 48;
 const BAND_CURVE_SAMPLES = 24;
 const MIN_Y_PAD = 0.5; // always leave at least this much headroom above/below the plotted range
@@ -84,7 +84,9 @@ export function GrowthChart({
   startAgeWeeks?: number;
 }) {
   const [plotWidth, setPlotWidth] = useState(0);
-  const height = 180;
+  // Taller than a thumbnail: the y-axis runs in 0.5 kg steps, which need
+  // vertical room before the tick labels start colliding.
+  const height = 216;
   const onLayout = (event: LayoutChangeEvent) => setPlotWidth(event.nativeEvent.layout.width);
 
   if (points.length === 0) {
@@ -166,10 +168,9 @@ export function GrowthChart({
     : `${seriesLabel} chart: ${rangeDescription}.`;
 
   return (
-    <View>
+    <View style={{ marginTop: 4 }}>
       <View style={{ flexDirection: 'row' }}>
         <View style={{ width: Y_AXIS_GUTTER, height }}>
-          <Text style={{ fontSize: 10, color: colors.muted }}>{unit}</Text>
           {yTicks
             .slice()
             .reverse()
@@ -178,10 +179,11 @@ export function GrowthChart({
                 key={tick}
                 style={{
                   position: 'absolute',
-                  top: toY(tick) - 7,
-                  right: 4,
-                  fontSize: 10,
+                  top: toY(tick) - 8,
+                  right: 8,
+                  fontSize: type.micro,
                   color: colors.muted,
+                  ...numerals,
                 }}
               >
                 {tick.toFixed(yDecimals)}
@@ -260,9 +262,9 @@ export function GrowthChart({
                   style={{
                     position: 'absolute',
                     right: 2,
-                    top: Math.min(Math.max(lastPoint.y - 7, 0), height - 12),
-                    fontSize: 8,
-                    color: colors.pink,
+                    top: Math.min(Math.max(lastPoint.y - 7, 0), height - 14),
+                    fontSize: type.micro,
+                    color: colors.accentDeep,
                   }}
                 >
                   {curve.label}
@@ -303,10 +305,10 @@ export function GrowthChart({
                 position: 'absolute',
                 left: Math.min(Math.max(toX(0) + 4, 0), plotWidth - 60),
                 top: 2,
-                fontSize: 9,
+                fontSize: type.micro,
                 fontFamily: type.fontHeading,
                 letterSpacing: 0.6,
-                color: colors.pink,
+                color: colors.accentDeep,
               }}
             >
               DUE DATE
@@ -358,15 +360,16 @@ export function GrowthChart({
       {plotWidth > 0 && (
         <View style={{ flexDirection: 'row', marginTop: 4 }}>
           <View style={{ width: Y_AXIS_GUTTER }} />
-          <View style={{ flex: 1, height: 14 }}>
+          <View style={{ flex: 1, height: 16 }}>
             {xTicks.map((tick) => (
               <Text
                 key={tick}
                 style={{
                   position: 'absolute',
                   left: Math.min(Math.max(toX(tick) - 10, 0), plotWidth - 20),
-                  fontSize: 10,
+                  fontSize: type.micro,
                   color: colors.muted,
+                  ...numerals,
                 }}
               >
                 {tick}
@@ -383,14 +386,14 @@ export function GrowthChart({
           color: colors.muted,
         }}
       >
-        Corrected age (weeks){showDueDateMarker ? ' · 0 = due date' : ''}
+        Corrected age (weeks){unit ? ` · ${unit}` : ''}{showDueDateMarker ? ' · 0 = due date' : ''}
       </Text>
       {referenceLabel && (
         <Text
           style={{
             marginTop: 8,
-            fontSize: 10,
-            lineHeight: 15,
+            fontSize: type.micro,
+            lineHeight: 17,
             color: colors.muted,
           }}
         >

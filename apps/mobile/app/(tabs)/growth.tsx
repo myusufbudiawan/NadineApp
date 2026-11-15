@@ -18,7 +18,7 @@ import { computeGrowthStats } from '@/features/growth/stats';
 import { loadMeasurementsForMetric } from '@/features/growth/storage';
 import { growthMetricLabels, GrowthMetric, GrowthMeasurement } from '@/features/growth/types';
 import { actualAge, correctedAge, formatAgeDetailed } from '@/lib/age';
-import { colors, type } from '@/lib/design-system/tokens';
+import { colors, numerals, type } from '@/lib/design-system/tokens';
 import { formatMeasurement } from '@/lib/format';
 
 const metricOptions: GrowthMetric[] = ['weight', 'length', 'headCircumference'];
@@ -159,7 +159,7 @@ export default function Growth() {
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <Card style={{ flex: 1 }}>
           <Text style={{ color: colors.muted, fontSize: 12 }}>Latest</Text>
-          <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text }}>
+          <Text style={{ fontSize: 20, fontFamily: type.fontHeading, color: colors.text, ...numerals }}>
             {stats?.latest ? `${formatMeasurement(stats.latest.value)} ${stats.latest.unit}` : '—'}
           </Text>
           <Text style={{ color: colors.green, fontSize: 12, marginTop: 8 }}>
@@ -205,7 +205,7 @@ export default function Growth() {
                 )
               }
             >
-              <Text style={{ fontSize: 11, color: colors.accentStrong }}>+ Add measurement</Text>
+              <Text style={{ fontSize: type.small, color: colors.accentDeep }}>+ Add measurement</Text>
             </Pressable>
           </View>
           <View
@@ -260,8 +260,8 @@ export default function Growth() {
 }
 
 const readingHeaderStyle = () => ({
-  fontSize: 10,
-  letterSpacing: 0.8,
+  fontSize: type.micro,
+  letterSpacing: type.capsSpacing,
   textTransform: 'uppercase' as const,
   color: colors.muted,
 });

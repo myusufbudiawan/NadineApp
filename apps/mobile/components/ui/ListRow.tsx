@@ -20,7 +20,7 @@ export function ListRow({
       accessibilityRole="button"
       accessibilityLabel={`${title}${subtitle ? `, ${subtitle}` : ''}`}
       onPress={onPress}
-      style={{
+      style={(state) => ({
         minHeight: 66,
         flexDirection: 'row',
         alignItems: 'center',
@@ -28,7 +28,11 @@ export function ListRow({
         paddingVertical: space.sm,
         borderBottomWidth: 1,
         borderBottomColor: colors.line,
-      }}
+        // react-native-web adds `hovered`/`focused` to the Pressable state;
+        // native only knows `pressed`, so the cast stays local to this file.
+        backgroundColor:
+          state.pressed || (state as { hovered?: boolean }).hovered ? colors.graySoft : 'transparent',
+      })}
     >
       <IconChip icon={icon} tone={tone} label="" />
       <View style={{ flex: 1 }}>
@@ -41,8 +45,8 @@ export function ListRow({
           <Text
             style={{
               marginTop: 3,
-              color: colors.faint,
-              fontSize: type.caption,
+              color: colors.muted,
+              fontSize: type.small,
               fontFamily: type.fontBody,
             }}
           >
@@ -50,7 +54,7 @@ export function ListRow({
           </Text>
         )}
       </View>
-      <Ionicons name="chevron-forward" color={colors.accent} size={17} />
+      <Ionicons name="chevron-forward" color={colors.accentDeep} size={17} />
     </Pressable>
   );
 }
